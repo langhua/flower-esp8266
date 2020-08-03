@@ -14,7 +14,7 @@
 
 出现的代码如下：
 
-```
+```c++
 // Example of the different modes of the X.509 validation options
 // in the WiFiClientBearSSL object
 //
@@ -352,13 +352,13 @@ static const char fp[] PROGMEM = "99:C1:DA:F0:7C:8D:69:A8:A0:65:49:2D:CA:AE:43:C
 * 第118行代码，使用self-signed.badssl.com替换api.github.com：
  把
 
-```
+```c++
   fetchURL(&client, host, port, path);
 ```
 
  替换为
 
-```
+```c++
   fetchURL(&client, "self-signed.badssl.com", 443, "/");
 ```
 
@@ -443,7 +443,7 @@ hQIDAQAB
 
 第157行修改后如下：
 
-```
+```c++
   fetchURL(&client, "self-signed.badssl.com", port, path);
 ```
 
@@ -488,13 +488,13 @@ hQIDAQAB
 - 把之前导出的badssl.cer文件内容，替换代码第162-184行
 - 把第200行和204行的host，替换为self-signed.badssl.com：
 
-```
+```c++
   fetchURL(&client, host, port, path);
 ```
 
 替换为：
 
-```
+```c++
   fetchURL(&client, "self-signed.badssl.com", port, path);
 ```
 
