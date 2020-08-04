@@ -315,7 +315,7 @@ void loop() {
 
 如下图所示：
 
-[api.github.com_ssl_fingerprint](images/ssl/api.github.com_ssl_fingerprint.png)
+![api.github.com_ssl_fingerprint](images/ssl/api.github.com_ssl_fingerprint.png)
 
 <br/>
 
@@ -427,7 +427,7 @@ NQIDAQAB
 
 ##### 对于自签证书，证书键的方法会访问成功吗？
 
-对于https://self-signed.badssl.com/，使用上面的方式重新生成证书键，还要把第157行的host，修改为self-signed.badssl.com，执行程序，访问成功。证书键如下：
+对于https://self-signed.badssl.com/ ，使用上面的方式重新生成证书键，还要把第157行的host，修改为self-signed.badssl.com，执行程序，访问成功。证书键如下：
 
 ```
 -----BEGIN PUBLIC KEY-----
@@ -483,7 +483,7 @@ hQIDAQAB
 
 ##### fetchCertAuthority能访问自签证书网站吗？
 
-仍然使用https://self-signed.badssl.com/来进行验证，验证结果是能够访问，具体步骤如下：
+仍然使用https://self-signed.badssl.com/ 来进行验证，验证结果是能够访问，具体步骤如下：
 
 - 把之前导出的badssl.cer文件内容，替换代码第162-184行
 - 把第200行和204行的host，替换为self-signed.badssl.com：
