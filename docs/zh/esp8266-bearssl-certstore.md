@@ -205,6 +205,7 @@ No certs found. Did you run certs-from-mozilla.py and upload the SPIFFS director
 ### certs-form-mozilla.py在哪里？是干什么用的？怎么用？
 
 - **certs-form-mozilla.py在哪里？**
+
 在互联网上搜索，在https://github.com/esp8266/Arduino/tree/2.6.3/libraries/ESP8266WiFi/examples/BearSSL_CertStore 可以看到，certs-form-mozilla.py是示例代码的一部分，如下图所示：
 
 ![BearSSL_CertStore_certsFromMozilla_github](images/ssl/BearSSL_CertStore_certsFromMozilla_github.png)
