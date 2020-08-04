@@ -4,10 +4,10 @@ Arduino IDE的库管理器中，搜索base64，可以搜到3个base64实现。ES
 
 本文对下列Base64编码/解码实现进行了验证：
 
-* [基于Libb64的Base64实现](#基于Libb64的Base64实现) 
-* [基于rBase64 by Abhijit Bose的实现](#基于rBase64byAbhijitBose的实现) 
-* [基于Base64 by Arturo Guadalupi的实现](#基于Base64byArturoGuadalupi的实现) 
-* [基于base64 by Densaugeo的实现](#基于base64byDensaugeo的实现) 
+* [基于Libb64的Base64实现](#基于Libb64的Base64实现)
+* [基于rBase64 by Abhijit Bose的实现](#基于rbase64-by-abhijit-bose的实现)
+* [基于Base64 by Arturo Guadalupi的实现](#基于base64-by-arturo-guadalupi的实现)
+* [基于base64 by Densaugeo的实现](#基于base64-by-densaugeo的实现)
 
 **结论**：推荐使用ESP8266 ROM的Libb64实现，来进行Base64编码/解码。
 
