@@ -1,5 +1,5 @@
 /*
-  Crypto SHA1/HMAC-SHA1 implementation to verify correct behaviour.
+  Crypto SHA256/HMAC-SHA256 implementation to verify correct behaviour.
 */
 
 #include <Crypto.h>
