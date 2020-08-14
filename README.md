@@ -44,6 +44,8 @@ Use ESP8266 as IoT device to demo business concept
 * [ESP8266 Hmac-Sha1](docs/zh/esp8266-hmac-sha1.md)
 * [ESP8266 Hmac-Sha256](docs/zh/esp8266-hmac-sha256.md)
 * [ESP8266实现对Bytes进行Base64编码](docs/zh/esp8266-base64-from-bytes.md)
-* [ESP8266实现URL编码/解码](docs/zh/esp8266-urlencode.md)
-* [ESP8266生成OneNET密码](docs/zh/esp8266-onenet-password.md)
+* [ESP8266实现OneNET URL编码](docs/zh/esp8266-onenet-urlencode.md)
+* [ESP8266生成OneNET MQTTS密码(MD5)](docs/zh/esp8266-onenet-mqtts-password-md5.md)
+* [ESP8266生成OneNET MQTTS密码(SHA1)](docs/zh/esp8266-onenet-mqtts-password-sha1.md)
+* [ESP8266生成OneNET MQTTS密码(SHA256)](docs/zh/esp8266-onenet-mqtts-password-sha256.md)
 

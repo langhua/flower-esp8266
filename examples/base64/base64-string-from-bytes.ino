@@ -2,6 +2,7 @@
 
 #define base64_alphabet "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
 #define base64_padding '='
+#define SIZE 100
 
 byte bytes_to_encode[16] = {0x97, 0x33, 0x01, 0x58, 0x43,
                             0x3F, 0x5E, 0xA2, 0x0B, 0x1B,
@@ -13,7 +14,7 @@ void setup() {
   Serial.println();
   Serial.println();
   Serial.println("Bytes to encode:");
-  for (int i = 0; i < 16; i++) {
+  for(int i = 0; i < 16; i++) {
     byte b = bytes_to_encode[i];
     if(b < 0x10) Serial.print('0');
     Serial.print(b, HEX);
@@ -22,7 +23,8 @@ void setup() {
   Serial.println();
   Serial.println();
 
-  char* encoded_result = base64_string_from_bytes(bytes_to_encode, sizeof(bytes_to_encode));
+  char encoded_result[SIZE];
+  base64_string_from_bytes(bytes_to_encode, sizeof(bytes_to_encode), encoded_result);
   Serial.println("Encoded string: ");
   Serial.println(encoded_result);
   Serial.println();
@@ -33,7 +35,7 @@ void loop() {
 
 }
 
-char* base64_string_from_bytes(byte bytes[], int bytes_size) {
+void base64_string_from_bytes(byte bytes[], int bytes_size, char result_char[]) {
   byte byte1, byte2, byte3;
   char octet1, octet2, octet3, octet4;
   std::stringstream ss;
@@ -62,6 +64,8 @@ char* base64_string_from_bytes(byte bytes[], int bytes_size) {
        << (byte2 != NULL ? base64_alphabet[octet3] : base64_padding)
        << (byte3 != NULL ? base64_alphabet[octet4] : base64_padding);
   }
-
-  return &*ss.str().begin();
+  char* temp = &*ss.str().begin();
+  memcpy(result_char, temp, strlen(temp) + 1);
+  ss.str("");
+  *temp = 0;
 }
