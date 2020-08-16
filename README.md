@@ -17,6 +17,10 @@ Use ESP8266 as IoT device to demo business concept
    
 <br/>
 
+You can find [Arduino RFID Starter Kit](https://www.aliexpress.com/wholesale?catId=0&initiative_id=SB_20200814105627&SearchText=arduino+rfid+starter+kit) and [ESP8266](https://www.aliexpress.com/w/wholesale-ESP8266.html) on AliExpress, the total cost should be less than 40USD.
+
+<br/>
+
 **Software**
 * Download and install [Arduino IDE](https://www.arduino.cc/en/Main/Software)
 
@@ -45,6 +49,7 @@ Use ESP8266 as IoT device to demo business concept
 * [ESP8266 Hmac-Sha256](docs/zh/esp8266-hmac-sha256.md)
 * [ESP8266实现对Bytes进行Base64编码](docs/zh/esp8266-base64-from-bytes.md)
 * [ESP8266实现OneNET URL编码](docs/zh/esp8266-onenet-urlencode.md)
+* [注册OneNET MQTTS产品](docs/zh/register-onenet-mqtts.md)
 * [ESP8266生成OneNET MQTTS密码(MD5)](docs/zh/esp8266-onenet-mqtts-password-md5.md)
 * [ESP8266生成OneNET MQTTS密码(SHA1)](docs/zh/esp8266-onenet-mqtts-password-sha1.md)
 * [ESP8266生成OneNET MQTTS密码(SHA256)](docs/zh/esp8266-onenet-mqtts-password-sha256.md)
