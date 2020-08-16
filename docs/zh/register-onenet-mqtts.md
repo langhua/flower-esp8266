@@ -39,7 +39,7 @@ OneNET MQTTS产品可以免费注册，步骤是：
     - [下载MQTT.fx 1.7.1](http://www.jensd.de/apps/mqttfx/1.7.1/)
     - 安装MQTT.fx 1.7.1
     - 下载并安装[OneNET token生成工具](https://open.iot.10086.cn/doc/mqtt/images/tools/token.exe)
-    - 在计算OneNET token时，有个过期时间参数，单位是秒，含义是从1970年1月1日零点算起的秒数。访问https://www.utctime.net/utc-timestamp，可以获得当前时间的秒数，注意，这个时间是格林威治时间，如果变成东八区时间，需要加上8小时x3600秒/小时=28800，再加上过期时间比如24小时=86400秒，即可作为计算token时的过期时间参数。网页上的时间如下图所示：
+    - 在计算OneNET token时，有个过期时间参数，单位是秒，含义是从1970年1月1日零点算起的秒数。访问https://www.utctime.net/utc-timestamp ，可以获得当前时间的秒数，注意，这个时间是格林威治时间，如果变成东八区时间，需要加上8小时x3600秒/小时=28800，再加上过期时间比如24小时=86400秒，即可作为计算token时的过期时间参数。网页上的时间如下图所示：
     ![utc-timestamp](images/onenet/utc-timestamp.png)
     <br/>
     
@@ -61,7 +61,6 @@ OneNET MQTTS产品可以免费注册，步骤是：
 
     - 点击【Connect】按钮，连接OneNET MQTT成功，如下图所示：
     ![mqtt.fx.connect](images/onenet/mqtt.fx.connect.png)
-    <br/>
     ![mqtt.fx.connected](images/onenet/mqtt.fx.connected.png)
     <br/>
 
