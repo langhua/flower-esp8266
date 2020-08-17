@@ -30,7 +30,7 @@ OneNET MQTTS产品可以免费注册，步骤是：
 
 ### 测试OneNET MQTTS产品
 
-下面以OneNET MQTTS文档中的MQTT.fx客户端方式，测试下MQTTS不加密和加密的登录、发送数据、接收数据、接收命令。
+下面以OneNET MQTTS文档中的MQTT.fx客户端方式，测试下MQTTS不加密和加密的登录、发布数据、订阅数据、接收命令。
 
 * **MQTT.fx不加密登录**
 
@@ -92,17 +92,56 @@ OneNET MQTTS产品可以免费注册，步骤是：
     
 <br/>
 
-* **接收数据**
+* **MQTT.fx发布数据**
+
+  在MQTT.fx中连接到OneNET后，在【Publish】页签中，输入主题和内容。主题的格式见[OneNET数据点topic簇](https://open.iot.10086.cn/doc/mqtt/book/device-develop/topics/dp-topics.html)的说明。设备上传数据点topic格式如下：
+
+```
+$sys/{pid}/{device-name}/dp/post/json
+```
+
+  把pid用产品ID、device-name用设备名替换后，主题实例化为：
+
+```
+$sys/321016/ESP8266_01/dp/post/json
+```
+
+  数据点包含了温度(temperature)和湿度(humidity)数据，示例如下：
+
+```json
+{
+    "id": 123,
+    "dp": {
+        "temperature": [{
+            "v": 29.5,
+            "t": 1597654757
+        }],
+        "humidity": [{
+            "v": 60.0, 
+            "t": 1597654757
+        }]
+    }
+}
+```
+
+  点击【Publish】按钮发布数据，如下图所示：
+  
+  ![mqtt.fx.publish](images/onenet/mqtt.fx.publish.png)
+
+<br/>
+
+  在OneNET中查看发布的数据，如下图所示：
+  
+  ![onenet-mqtt-device-datapoint](images/onenet/onenet-mqtt-device-datapoint.png)
+
+<br/>
+
+* **MQTT.fx订阅数据**
 
 
 <br/>
 
-* **发送数据**
-
-
-<br/>
-
-* **接收命令**
+* **MQTT.fx接收命令**
 
 
 <br/>
