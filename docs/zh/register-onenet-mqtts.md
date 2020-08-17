@@ -32,11 +32,9 @@ OneNET MQTTS产品可以免费注册，步骤是：
 
 下面以OneNET MQTTS文档中的MQTT.fx客户端方式，测试下MQTTS不加密和加密的登录、发送数据、接收数据、接收命令。
 
-##### MQTT.fx不加密登录
----
+* **MQTT.fx不加密登录**
 
-    - [下载MQTT.fx 1.7.1](http://www.jensd.de/apps/mqttfx/1.7.1/)
-    - 安装MQTT.fx 1.7.1
+    - 下载并安装[MQTT.fx 1.7.1](http://www.jensd.de/apps/mqttfx/1.7.1/)
     - 下载并安装[OneNET token生成工具](https://open.iot.10086.cn/doc/mqtt/images/tools/token.exe)
     - 在计算OneNET token时，有个过期时间参数，单位是秒，含义是从1970年1月1日零点算起的秒数。访问https://www.utctime.net/utc-timestamp ，可以获得当前时间的秒数，注意，这个时间是格林威治时间，如果变成东八区时间，需要加上8小时x3600秒/小时=28800，再加上过期时间比如24小时=86400秒，即可作为计算token时的过期时间参数。网页上的时间如下图所示：
     ![utc-timestamp](images/onenet/utc-timestamp.png)
@@ -77,10 +75,9 @@ OneNET MQTTS产品可以免费注册，步骤是：
 
 <br/>
 
-##### MQTT.fx加密登录
----
+* **MQTT.fx加密登录**
 
-MQTT.fx加密登录，与上面的不加密登录，需要多加一个【SSL/TLS】页签的设置，服务器网址和端口不同，其它步骤都一样。步骤如下：
+  MQTT.fx加密登录，与上面的不加密登录，需要多加一个【SSL/TLS】页签的设置，服务器网址和端口不同，其它步骤都一样。步骤如下：
 
     - 从[OneNET MQTT开发指南](https://open.iot.10086.cn/doc/mqtt/book/device-develop/manual.html)页面下载证书压缩文件，如下图所示：
     ![onenet_mqtts_cert_download](images/onenet/onenet_mqtts_cert_download.png)
@@ -95,18 +92,21 @@ MQTT.fx加密登录，与上面的不加密登录，需要多加一个【SSL/TLS
     
 <br/>
 
-##### 接收数据
----
+* **接收数据**
+
 
 <br/>
 
-##### 发送数据
----
+* **发送数据**
 
-##### 接收命令
----
 
 <br/>
+
+* **接收命令**
+
+
+<br/>
+
 
 ### 参考资料
 
