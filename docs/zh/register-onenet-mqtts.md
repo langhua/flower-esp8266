@@ -32,10 +32,9 @@ OneNET MQTTS产品可以免费注册，步骤是：
 
 下面以OneNET MQTTS文档中的MQTT.fx客户端方式，测试下MQTTS不加密和加密的登录、发送数据、接收数据、接收命令。
 
-##### MQTT.fx不加密
+##### MQTT.fx不加密登录
 ---
 
-1. **不加密登录：**
     - [下载MQTT.fx 1.7.1](http://www.jensd.de/apps/mqttfx/1.7.1/)
     - 安装MQTT.fx 1.7.1
     - 下载并安装[OneNET token生成工具](https://open.iot.10086.cn/doc/mqtt/images/tools/token.exe)
@@ -78,7 +77,33 @@ OneNET MQTTS产品可以免费注册，步骤是：
 
 <br/>
 
-##### MQTT.fx加密
+##### MQTT.fx加密登录
+---
+
+MQTT.fx加密登录，与上面的不加密登录，需要多加一个【SSL/TLS】页签的设置，服务器网址和端口不同，其它步骤都一样。步骤如下：
+
+    - 从[OneNET MQTT开发指南](https://open.iot.10086.cn/doc/mqtt/book/device-develop/manual.html)页面下载证书压缩文件，如下图所示：
+    ![onenet_mqtts_cert_download](images/onenet/onenet_mqtts_cert_download.png)
+    <br/>
+    
+    - 把文件解压缩
+    - 在MQTT.fx中，新建一个“OneNET MQTTs”的配置，选择【SSL/TLS】页签，如下图所示：
+    ![mqtt.fx.profile.ssl.tls](images/onenet/mqtt.fx.profile.ssl.tls.png)
+    <br/>
+    
+    - 点击【OK】按钮后，连接OneNET MQTTS，能够正常连接
+    
+<br/>
+
+##### 接收数据
+---
+
+<br/>
+
+##### 发送数据
+---
+
+##### 接收命令
 ---
 
 <br/>
@@ -92,3 +117,5 @@ OneNET MQTTS产品可以免费注册，步骤是：
 4. OneNET token生成工具：https://open.iot.10086.cn/doc/mqtt/book/manual/auth/tool.html
 5. OneNET MQTTS开发指南：https://open.iot.10086.cn/doc/mqtt/book/device-develop/manual.html
 6. 以秒数表示的当前时间：https://www.utctime.net/utc-timestamp
+7. OneNET数据点topic簇：https://open.iot.10086.cn/doc/mqtt/book/device-develop/topics/dp-topics.html
+8. OneNET设备命令topic簇：https://open.iot.10086.cn/doc/mqtt/book/device-develop/topics/cmd-topics.html
