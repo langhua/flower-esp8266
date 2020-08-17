@@ -130,7 +130,7 @@ $sys/321016/ESP8266_01/dp/post/json
 
 <br/>
 
-  在OneNET中查看发布的数据，如下图所示：
+  在OneNET中查看发布的数据，如下图所示，数据发布成功：
   
   ![onenet-mqtt-device-datapoint](images/onenet/onenet-mqtt-device-datapoint.png)
 
@@ -138,10 +138,55 @@ $sys/321016/ESP8266_01/dp/post/json
 
 * **MQTT.fx订阅数据**
 
+根据[OneNET数据点topic簇](https://open.iot.10086.cn/doc/mqtt/book/device-develop/topics/dp-topics.html)的说明，OneNET通知"设备上传数据点成功"的主题是：
+
+```
+$sys/{pid}/{device-name}/dp/post/json/accepted
+```
+
+把pid用产品ID、device-name用设备名替换后，主题实例化为：
+
+```
+$sys/321016/ESP8266_01/dp/post/json/accepted
+```
+
+OneNET通知"设备上传数据点失败"的主题是：
+
+```
+$sys/{pid}/{device-name}/dp/post/json/rejected
+```
+
+把pid用产品ID、device-name用设备名替换后，主题实例化为：
+
+```
+$sys/321016/ESP8266_01/dp/post/json/rejected
+```
+
+在【Subscribe】页签中，分别订阅上面两个主题，如下图所示：
+
+![mqtt.fx.subscribe](images/onenet/mqtt.fx.subscribe.png)
+
+<br/>
+
+在【Publish】页签中，再发布一次数据，然后点击【Subscribe】页签，可以看到成功的消息，如下图所示：
+
+![mqtt.fx.subscribe.accepted](images/onenet/mqtt.fx.subscribe.accepted.png)
+
+<br/>
+
+在【Publish】页签中，修改60为60%，再发布一次数据，然后点击【Subscribe】页签，可以看到失败的消息，如下图所示：
+
+![mqtt.fx.subscribe.rejected](images/onenet/mqtt.fx.subscribe.rejected.png)
+
+<br/>
+
+至此，完成了OneNET主题订阅。
 
 <br/>
 
 * **MQTT.fx接收命令**
+
+
 
 
 <br/>
