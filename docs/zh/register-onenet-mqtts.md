@@ -174,23 +174,57 @@ $sys/321016/ESP8266_01/dp/post/json/rejected
 
 <br/>
 
-在【Publish】页签中，修改60为60%，再发布一次数据，然后点击【Subscribe】页签，可以看到失败的消息，如下图所示：
+在【Publish】页签中，**把json中humidity（湿度）的值从60修改为60%**，再发布一次数据，然后点击【Subscribe】页签，可以看到失败的消息，如下图所示：
 
 ![mqtt.fx.subscribe.rejected](images/onenet/mqtt.fx.subscribe.rejected.png)
 
 <br/>
 
-至此，完成了OneNET主题订阅。
+**至此，完成了OneNET主题订阅。**
 
 <br/>
 
 * **MQTT.fx接收命令**
 
+根据OneNET[设备命令topic簇](https://open.iot.10086.cn/doc/mqtt/book/device-develop/topics/cmd-topics.html)的说明，
 
+```
+$sys/{pid}/{device-name}/cmd/request/{cmdid}
+```
 
+把pid用产品ID、device-name用设备名替换后，cmdid用#替换，表示任何命令，主题实例化为：
+
+```
+$sys/321016/ESP8266_01/cmd/request/#
+```
+
+在MQTT.fx中，连接OneNET MQTT的状态下，在【Subscribe】页签中，订阅OneNET发给设备的命令；然后在OneNET中，为设备下发命令，如下图所示：
+![onenet-mqtt-command-request-entry](images/onenet/onenet-mqtt-command-request-entry.png)
+![mqtt.fx.onenet-cmd-request](images/onenet/mqtt.fx.onenet-cmd-request.png)
 
 <br/>
 
+OneNET设备回复命令应答的格式是：
+
+```
+$sys/{pid}/{device-name}/cmd/response/{cmdid}
+```
+
+把pid用产品ID、device-name用设备名替换后，cmdid用订阅收到的request后面的ID替换，在上图中，是4b9772c8-5ef0-46e0-8ca7-cf8d6afd433a，因此，应答主题实例化为：
+
+```
+$sys/321016/ESP8266_01/cmd/response/4b9772c8-5ef0-46e0-8ca7-cf8d6afd433a
+```
+
+在MQTT.fx的【Publish】标签中，发布实例化的主题，OneNET会收到该消息，如下图所示：
+
+![mqtt.fx.onenet-cmd-response-success](images/onenet/mqtt.fx.onenet-cmd-response-success.png)
+
+<br/>
+
+**至此，完成了OneNET命令下发。**
+
+<br/>
 
 ### 参考资料
 
