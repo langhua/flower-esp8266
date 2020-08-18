@@ -225,6 +225,11 @@ $sys/321016/ESP8266_01/cmd/response/4b9772c8-5ef0-46e0-8ca7-cf8d6afd433a
 **至此，完成了OneNET命令下发。**
 
 <br/>
+<br/>
+
+你可以用sha1和sha256为签名算法，验证[测试OneNET MQTTS产品](#测试onenet-mqtts产品)中的登录步骤。
+
+<br/>
 
 ### 参考资料
 
