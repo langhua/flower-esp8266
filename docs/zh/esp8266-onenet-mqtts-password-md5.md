@@ -1,27 +1,18 @@
 # ESP8266生成OneNET MQTTS密码(MD5)
 
-本文分为以下几个小节：
-
-* [免费注册OneNET MQTTS](#免费注册onenet_mqtts)
-* [OneNET MQTTS密码生成方法](#onenet_mqtts密码生成方法)
-* [如何生成过期时间](#如何生成过期时间)
-* [运行结果](#运行结果)
-
-<br/>
 
 ### OneNET MQTTS密码生成方法
 
-按照[OneNET token算法](https://open.iot.10086.cn/doc/mqtt/book/manual/auth/token.html)的说明，生成MQTTS密码步骤如下：
+按照[OneNET token算法](https://open.iot.10086.cn/doc/mqtt/book/manual/auth/token.html)的说明，使用ESP8266生成MQTTS密码步骤如下：
 
-1. 构建签名字符串
-
-
-2. 对字符串签名
-
-
-3. 对每个参数的值进行URL编码，组合成token
-
-这个token是OneNET MQTTS认证时的密码。
+1. 修改代码中的STASSID和STAPSK，令ESP8266能够连接到wifi上
+2. 从互联网上获取当前时间
+3. 从当前时间+24小时，作为OneNET token计算的过期时间
+4. 构建签名用的字符串
+5. 对设备key进行base64解码，得到的字节数组作为Hmac-MD5计算中的key
+6. 对第四步生成的字符串做Hmac-MD5签名，得到字节数组
+7. 对上一步得到的自己数组做base64编码
+8. 对各参数值做URLEncode，构建OneNET token，这个token即是OneNET MQTTS认证时的密码
 
 <br>
 
@@ -366,6 +357,15 @@ void url_encode(char str_to_encode[], int str_length, char result_char[]) {
 
 <br/>
 
+另外，这个token可以在MQTT.fx中，成功[登录OneNET](register-onenet-mqtts.md#测试onenet-mqtts产品)。
+
+<br/>
+
 ### 参考资料
 
 1. MQTTs接入OneNET实例教学视频：https://v.qq.com/x/page/n09166l17fc.html
+2. OneNET MQTTS设备接入
+：https://open.iot.10086.cn/doc/mqtt/book/get-start/connect.html
+3. MQTT客户端1.7.1下载：http://www.jensd.de/apps/mqttfx/1.7.1/
+4. OneNET token生成工具：https://open.iot.10086.cn/doc/mqtt/book/manual/auth/tool.html
+5. OneNET MQTTS开发指南：https://open.iot.10086.cn/doc/mqtt/book/device-develop/manual.html
