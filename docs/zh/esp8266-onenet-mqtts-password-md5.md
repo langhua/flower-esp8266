@@ -347,7 +347,7 @@ void url_encode(char str_to_encode[], int str_length, char result_char[]) {
 
 执行上述代码，把串口监视器的输出结果，与cryptii.com的结果进行比较，编码结果一致，如下图所示：
 
-![Arduino_generate_onenet-mqtts-password](images/onenet/Arduino_generate_onenet-mqtts-password.png)
+![Arduino_generate_onenet-mqtts-password-md5](images/onenet/Arduino_generate_onenet-mqtts-password-md5.png)
 
 
 
