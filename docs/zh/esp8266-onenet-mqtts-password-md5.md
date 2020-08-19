@@ -13,6 +13,7 @@
 6. 对第四步生成的字符串做Hmac-MD5签名，得到已签名数组
 7. 对上一步得到的已签名数组做base64编码
 8. 对各参数值做URLEncode，构建OneNET token，这个token即是OneNET MQTTS认证时的密码
+9. 在MQTT.fx中使用这个密码连接OneNET MQTT
 
 <br>
 

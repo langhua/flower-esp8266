@@ -1,27 +1,3 @@
-# ESP8266生成OneNET MQTTS密码(SHA1)
-
-
-### OneNET MQTTS密码生成方法
-
-按照[OneNET token算法](https://open.iot.10086.cn/doc/mqtt/book/manual/auth/token.html)的说明，使用ESP8266生成MQTTS密码步骤如下：
-
-1. 修改代码中的STASSID和STAPSK，令ESP8266能够连接到wifi上
-2. 从互联网上获取当前时间
-3. 从当前时间+24小时，作为OneNET token计算的过期时间
-4. 构建签名用的字符串
-5. 对设备key进行base64解码，得到的字节数组作为Hmac-Sha1计算中的key
-6. 对第四步生成的字符串做Hmac-Sha1签名，得到已签名字节数组
-7. 对上一步得到的已签名数组做base64编码
-8. 对各参数值做URLEncode，构建OneNET token，这个token即是OneNET MQTTS认证时的密码
-9. 在MQTT.fx中使用这个密码连接OneNET MQTT
-
-<br>
-
-将上述步骤在Arduino中使用c++实现：
-
-<br/>
-
-```c++
 #include <ESP8266WiFi.h>
 #include <time.h>
 #include <sstream>
@@ -30,10 +6,10 @@
 #include <libb64/cdecode.h>
 
 #include <Crypto.h>
-#include <SHA1.h>
+#include <SHA256.h>
 #include <string.h>
 
-#define HASH_SIZE 20
+#define HASH_SIZE 32
 
 #ifndef STASSID
 #define STASSID "ssid"
@@ -50,7 +26,7 @@ const char *pass = STAPSK;
 #define ONENET_CLIENT_ID "ESP8266_01"     // 设备名称
 #define ONENET_USERNAME "321016"          // 平台分配的产品ID
 #define ONENET_MQTT_VERSION "2018-10-31"
-#define ONENET_MQTT_METHOD "sha1"
+#define ONENET_MQTT_METHOD "sha256"
 #define DEFAULT_EXPIRE_IN_SECONDS 86400   // 24小时
 #define ONENET_DEVICE_KEY "5XHGxLb9Rr25t5po+Y3c/mtqiS6ArjsLtzk/sS/D5x8="
 
@@ -134,10 +110,10 @@ void setup() {
   Serial.println();
   Serial.println();
 
-  // 得到hmac_sha1
+  // 得到hmac_sha256
   uint8_t hmac_result_bytes[HASH_SIZE];
-  crypto_hmac_sha1(key_string, strlen(key_string), stringForSign, strlen(stringForSign), hmac_result_bytes);
-  Serial.println("HMac-SHA1 bytes:");
+  crypto_hmac_sha256(key_string, strlen(key_string), stringForSign, strlen(stringForSign), hmac_result_bytes);
+  Serial.println("HMac-SHA256 bytes:");
   for(int i = 0; i < HASH_SIZE; i++) {
     uint8_t b = hmac_result_bytes[i];
     if(b < 0x10) Serial.print('0');
@@ -149,7 +125,7 @@ void setup() {
 
   char encoded_hmac_result[SIZE];
   base64_string_from_bytes(hmac_result_bytes, sizeof(hmac_result_bytes), encoded_hmac_result);
-  Serial.println("Encoded HMac-SHA1 string: ");
+  Serial.println("Encoded HMac-SHA256 string: ");
   Serial.println(encoded_hmac_result);
   Serial.println();
   Serial.println();
@@ -230,12 +206,12 @@ char* decode(const char* input) {
   return output;
 }
 
-void crypto_hmac_sha1(char* key, size_t keyLength, char* msg, size_t msgLength, uint8_t* result) {
+void crypto_hmac_sha256(char* key, size_t keyLength, char* msg, size_t msgLength, uint8_t* result) {
   uint8_t value[HASH_SIZE];
-  SHA1 sha1Hash;
-  sha1Hash.resetHMAC(key, keyLength);
-  sha1Hash.update(msg, msgLength);
-  sha1Hash.finalizeHMAC(key, keyLength, value, HASH_SIZE);
+  SHA256 sha256Hash;
+  sha256Hash.resetHMAC(key, keyLength);
+  sha256Hash.update(msg, msgLength);
+  sha256Hash.finalizeHMAC(key, keyLength, value, HASH_SIZE);
   memcpy(result, value, HASH_SIZE);
 }
 
@@ -321,31 +297,3 @@ void url_encode(char str_to_encode[], int str_length, char result_char[]) {
   ss.str("");
   *temp = 0;
 }
-```
-
-<br/>
-
-执行上述代码，把串口监视器的输出结果，与cryptii.com的结果进行比较，编码结果一致，如下图所示：
-
-![Arduino_generate_onenet-mqtts-password-sha1](images/onenet/Arduino_generate_onenet-mqtts-password-sha1.png)
-
-
-
-<br/>
-
-**结论：代码生成的结果与cryptii.com一致。**
-
-<br/>
-
-另外，这个token可以在MQTT.fx中，成功[登录OneNET](register-onenet-mqtts.md#测试onenet-mqtts产品)。
-
-<br/>
-
-### 参考资料
-
-1. MQTTs接入OneNET实例教学视频：https://v.qq.com/x/page/n09166l17fc.html
-2. OneNET MQTTS设备接入
-：https://open.iot.10086.cn/doc/mqtt/book/get-start/connect.html
-3. MQTT客户端1.7.1下载：http://www.jensd.de/apps/mqttfx/1.7.1/
-4. OneNET token生成工具：https://open.iot.10086.cn/doc/mqtt/book/manual/auth/tool.html
-5. OneNET MQTTS开发指南：https://open.iot.10086.cn/doc/mqtt/book/device-develop/manual.html
