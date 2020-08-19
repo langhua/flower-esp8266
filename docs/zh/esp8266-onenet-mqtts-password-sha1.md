@@ -1,4 +1,4 @@
-# ESP8266生成OneNET MQTTS密码(MD5)
+# ESP8266生成OneNET MQTTS密码(SHA1)
 
 
 ### OneNET MQTTS密码生成方法
@@ -9,8 +9,8 @@
 2. 从互联网上获取当前时间
 3. 从当前时间+24小时，作为OneNET token计算的过期时间
 4. 构建签名用的字符串
-5. 对设备key进行base64解码，得到的字节数组作为Hmac-MD5计算中的key
-6. 对第四步生成的字符串做Hmac-MD5签名，得到已签名数组
+5. 对设备key进行base64解码，得到的字节数组作为Hmac-Sha1计算中的key
+6. 对第四步生成的字符串做Hmac-Sha1签名，得到已签名字节数组
 7. 对上一步得到的已签名数组做base64编码
 8. 对各参数值做URLEncode，构建OneNET token，这个token即是OneNET MQTTS认证时的密码
 
@@ -28,6 +28,12 @@
 #include <libb64/cencode.h>
 #include <libb64/cdecode.h>
 
+#include <Crypto.h>
+#include <SHA1.h>
+#include <string.h>
+
+#define HASH_SIZE 20
+
 #ifndef STASSID
 #define STASSID "ssid"
 #define STAPSK  "password"
@@ -43,7 +49,7 @@ const char *pass = STAPSK;
 #define ONENET_CLIENT_ID "ESP8266_01"     // 设备名称
 #define ONENET_USERNAME "321016"          // 平台分配的产品ID
 #define ONENET_MQTT_VERSION "2018-10-31"
-#define ONENET_MQTT_METHOD "md5"
+#define ONENET_MQTT_METHOD "sha1"
 #define DEFAULT_EXPIRE_IN_SECONDS 86400   // 24小时
 #define ONENET_DEVICE_KEY "5XHGxLb9Rr25t5po+Y3c/mtqiS6ArjsLtzk/sS/D5x8="
 
@@ -94,18 +100,28 @@ void setup() {
      << ONENET_MQTT_METHOD << '\n'
      << resource << '\n'
      << ONENET_MQTT_VERSION;
-  Serial.println("String for signature: ");
-  char* stringForSign = &*ss.str().begin();
+  Serial.print("String for signature ");
+  temp = &*ss.str().begin();
+  char stringForSign[strlen(temp)];
+  memcpy(stringForSign, temp, strlen(temp) + 1);
+  ss.str("");
+  *temp = 0;
+  Serial.print("(");
+  Serial.print(strlen(stringForSign));
+  Serial.println("):");
   Serial.println(stringForSign);
   Serial.println();
 
-  byte bytesForSign[strlen(stringForSign)];
-  for(int i = 0; i < strlen(stringForSign); i++) {
-    bytesForSign[i] = stringForSign[i];
-  }
+  // 得到key_string
+  char* key_string = decode(ONENET_DEVICE_KEY);
+  Serial.println("Decoded key string: ");
+  Serial.print("(");
+  Serial.print(strlen(key_string));
+  Serial.print(") ");
+  Serial.println(key_string);
+  Serial.println();
 
   // 得到key_bytes
-  char* key_string = decode(ONENET_DEVICE_KEY);
   byte key_bytes[strlen(key_string)];
   Serial.println("Decoded key bytes: ");
   for(int i = 0; i < strlen(key_string); i++) {
@@ -117,12 +133,12 @@ void setup() {
   Serial.println();
   Serial.println();
 
-  // 得到hmac_md5
-  byte hmac_result_bytes[16];
-  hmac_md5(key_bytes, sizeof(key_bytes), bytesForSign, sizeof(bytesForSign), hmac_result_bytes);
-  Serial.println("HMac-MD5 bytes:");
-  for(int i = 0; i < 16; i++) {
-    byte b = hmac_result_bytes[i];
+  // 得到hmac_sha1
+  uint8_t hmac_result_bytes[HASH_SIZE];
+  crypto_hmac_sha1(key_string, strlen(key_string), stringForSign, strlen(stringForSign), hmac_result_bytes);
+  Serial.println("HMac-SHA1 bytes:");
+  for(int i = 0; i < HASH_SIZE; i++) {
+    uint8_t b = hmac_result_bytes[i];
     if(b < 0x10) Serial.print('0');
     Serial.print(b, HEX);
     Serial.print(' ');
@@ -132,7 +148,7 @@ void setup() {
 
   char encoded_hmac_result[SIZE];
   base64_string_from_bytes(hmac_result_bytes, sizeof(hmac_result_bytes), encoded_hmac_result);
-  Serial.println("Encoded HMac-MD5 string: ");
+  Serial.println("Encoded HMac-SHA1 string: ");
   Serial.println(encoded_hmac_result);
   Serial.println();
   Serial.println();
@@ -213,50 +229,13 @@ char* decode(const char* input) {
   return output;
 }
 
-void hmac_md5(byte key[], int keyLength, byte msg[], int msgLength, byte result[]) {
-
-  int blockSize = 64;
-  byte baKey[64] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-                     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-                     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-  byte hash_result[16];
-  byte baOuterKeyPadded[blockSize];
-  byte baInnerKeyPadded[blockSize];
-  byte tempHash[16];
-  MD5Builder md5;
-
-  if(keyLength > blockSize) {
-    md5.begin();
-    md5.add(key, keyLength);
-    md5.calculate();
-    md5.getBytes(baKey);
-  }
-  else {
-    for(int i = 0; i < keyLength; i++) {
-      baKey[i] = key[i];
-    }
-  }
-
-  for (int i = 0; i < blockSize; i++) {
-    baOuterKeyPadded[i] = baKey[i] ^ 0x5C;
-    baInnerKeyPadded[i] = baKey[i] ^ 0x36;
-  }
-
-  // return hash(o_key_pad ∥ hash(i_key_pad ∥ message)) // Where ∥ is concatenation
-  md5.begin();
-  md5.add(baInnerKeyPadded, blockSize);
-  md5.add(msg, msgLength);
-  md5.calculate();
-  md5.getBytes(tempHash);
-
-  md5.begin();
-  md5.add(baOuterKeyPadded, blockSize);
-  md5.add(tempHash, 16);
-  md5.calculate();
-  md5.getBytes(hash_result);
-
-  memcpy(result, hash_result, 16);
+void crypto_hmac_sha1(char* key, size_t keyLength, char* msg, size_t msgLength, uint8_t* result) {
+  uint8_t value[HASH_SIZE];
+  SHA1 sha1Hash;
+  sha1Hash.resetHMAC(key, keyLength);
+  sha1Hash.update(msg, msgLength);
+  sha1Hash.finalizeHMAC(key, keyLength, value, HASH_SIZE);
+  memcpy(result, value, HASH_SIZE);
 }
 
 // Set time via NTP, as required for x.509 validation
@@ -347,7 +326,7 @@ void url_encode(char str_to_encode[], int str_length, char result_char[]) {
 
 执行上述代码，把串口监视器的输出结果，与cryptii.com的结果进行比较，编码结果一致，如下图所示：
 
-![Arduino_generate_onenet-mqtts-password-md5](images/onenet/Arduino_generate_onenet-mqtts-password-md5.png)
+![Arduino_generate_onenet-mqtts-password-sha1](images/onenet/Arduino_generate_onenet-mqtts-password-sha1.png)
 
 
 
