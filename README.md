@@ -53,4 +53,6 @@ You can find [Arduino RFID Starter Kit](https://www.aliexpress.com/wholesale?cat
 * [ESP8266生成OneNET MQTTS密码(MD5)](docs/zh/esp8266-onenet-mqtts-password-md5.md)
 * [ESP8266生成OneNET MQTTS密码(SHA1)](docs/zh/esp8266-onenet-mqtts-password-sha1.md)
 * [ESP8266生成OneNET MQTTS密码(SHA256)](docs/zh/esp8266-onenet-mqtts-password-sha256.md)
+* [ESP8266连接OneNET MQTTS](docs/zh/esp8266-onenet-mqtts-connect.md)
+* [ESP8266发布/订阅OneNET MQTTS](docs/zh/esp8266-onenet-mqtts-pubsub.md)
 

@@ -1,4 +1,5 @@
 #include <ESP8266WiFi.h>
+#include <WiFiClientSecure.h>
 #include <time.h>
 #include <sstream>
 
@@ -14,8 +15,8 @@
 #define HASH_SIZE 32
 
 #ifndef STASSID
-#define STASSID "ssid"
-#define STAPSK  "password"
+#define STASSID "62104"
+#define STAPSK  "SJHZGHSZC1997"
 #endif
 
 const char *ssid = STASSID;
@@ -32,15 +33,49 @@ const char *pass = STAPSK;
 #define DEFAULT_EXPIRE_IN_SECONDS 86400   // 24小时
 #define ONENET_DEVICE_KEY "5XHGxLb9Rr25t5po+Y3c/mtqiS6ArjsLtzk/sS/D5x8="
 
-#define ONENET_SERVER "183.230.40.96"
-#define ONENET_SERVER_PORT 1883
+IPAddress mqtt_ip(183, 230, 40, 16);
+#define ONENET_SERVER "183.230.40.16"
+#define ONENET_SERVER_PORT 8883
 
 void callback(char* topic, byte* payload, unsigned int length) {
-  // handle message arrived
+  Serial.print("Message arrived [");
+  Serial.print(topic);
+  Serial.print("] ");
+  for (int i=0;i<length;i++) {
+    char receivedChar = (char)payload[i];
+    Serial.println(receivedChar);
+    //****
+    //Do some action based on message received
+    //***
+  }
 }
 
-WiFiClient client;
+static const char cacert[] PROGMEM = R"EOF(
+-----BEGIN CERTIFICATE-----
+MIIDOzCCAiOgAwIBAgIJAPCCNfxANtVEMA0GCSqGSIb3DQEBCwUAMDQxCzAJBgNV
+BAYTAkNOMQ4wDAYDVQQKDAVDTUlPVDEVMBMGA1UEAwwMT25lTkVUIE1RVFRTMB4X
+DTE5MDUyOTAxMDkyOFoXDTQ5MDUyMTAxMDkyOFowNDELMAkGA1UEBhMCQ04xDjAM
+BgNVBAoMBUNNSU9UMRUwEwYDVQQDDAxPbmVORVQgTVFUVFMwggEiMA0GCSqGSIb3
+DQEBAQUAA4IBDwAwggEKAoIBAQC/VvJ6lGWfy9PKdXKBdzY83OERB35AJhu+9jkx
+5d4SOtZScTe93Xw9TSVRKrFwu5muGgPusyAlbQnFlZoTJBZY/745MG6aeli6plpR
+r93G6qVN5VLoXAkvqKslLZlj6wXy70/e0GC0oMFzqSP0AY74icANk8dUFB2Q8usS
+UseRafNBcYfqACzF/Wa+Fu/upBGwtl7wDLYZdCm3KNjZZZstvVB5DWGnqNX9HkTl
+U9NBMS/7yph3XYU3mJqUZxryb8pHLVHazarNRppx1aoNroi+5/t3Fx/gEa6a5PoP
+ouH35DbykmzvVE67GUGpAfZZtEFE1e0E/6IB84PE00llvy3pAgMBAAGjUDBOMB0G
+A1UdDgQWBBTTi/q1F2iabqlS7yEoX1rbOsz5GDAfBgNVHSMEGDAWgBTTi/q1F2ia
+bqlS7yEoX1rbOsz5GDAMBgNVHRMEBTADAQH/MA0GCSqGSIb3DQEBCwUAA4IBAQAL
+aqJ2FgcKLBBHJ8VeNSuGV2cxVYH1JIaHnzL6SlE5q7MYVg+Ofbs2PRlTiWGMazC7
+q5RKVj9zj0z/8i3ScWrWXFmyp85ZHfuo/DeK6HcbEXJEOfPDvyMPuhVBTzuBIRJb
+41M27NdIVCdxP6562n6Vp0gbE8kN10q+ksw8YBoLFP0D1da7D5WnSV+nwEIP+F4a
+3ZX80bNt6tRj9XY0gM68mI60WXrF/qYL+NUz+D3Lw9bgDSXxpSN8JGYBR85BxBvR
+NNAhsJJ3yoAvbPUQ4m8J/CoVKKgcWymS1pvEHmF47pgzbbjm5bdthlIx+swdiGFa
+WzdhzTYwVkxBaU+xf/2w
+-----END CERTIFICATE-----
+)EOF";
+
+WiFiClientSecure client; 
 PubSubClient mqttclient(client);
+X509List cert(cacert);
 char onenet_token[1024];
 
 void setup() {
@@ -90,13 +125,12 @@ void setup() {
      << ONENET_MQTT_METHOD << '\n'
      << resource << '\n'
      << ONENET_MQTT_VERSION;
-  Serial.print("String for signature ");
+  Serial.print("String for signature (");
   temp = &*ss.str().begin();
   char stringForSign[strlen(temp)];
   memcpy(stringForSign, temp, strlen(temp) + 1);
   ss.str("");
   *temp = 0;
-  Serial.print("(");
   Serial.print(strlen(stringForSign));
   Serial.println("):");
   Serial.println(stringForSign);
@@ -104,10 +138,9 @@ void setup() {
 
   // 得到key_string
   char* key_string = decode(ONENET_DEVICE_KEY);
-  Serial.println("Decoded key string: ");
-  Serial.print("(");
+  Serial.print("Decoded key string(");
   Serial.print(strlen(key_string));
-  Serial.print(") ");
+  Serial.println("):");
   Serial.println(key_string);
   Serial.println();
 
@@ -158,26 +191,37 @@ void setup() {
   Serial.println("OneNET password: ");
   temp = &*ss.str().begin();
   onenet_token[strlen(temp)];
-  memcpy(onenet_token, temp, strlen(temp) + 1);  
+  memcpy(onenet_token, temp, strlen(temp) + 1);
   Serial.println(onenet_token);
   ss.clear();
   ss.str("");
+
+  // client.setInsecure();
+  client.setTrustAnchors(&cert);
+  setClock();
+
+  // 配置MQTT客户端
+  // mqttclient.setServer(ONENET_SERVER, ONENET_SERVER_PORT);
+  mqttclient.setServer(mqtt_ip, ONENET_SERVER_PORT);
+  mqttclient.setKeepAlive(60);
+  mqttclient.setSocketTimeout(30);
+  mqttclient.setCallback(callback);
 }
 
 void loop() {
-  //connecting to a mqtt broker
-  mqttclient.setServer(ONENET_SERVER, ONENET_SERVER_PORT);
-  mqttclient.setCallback(callback);
-  while (!mqttclient.connected()) {
-      Serial.println("Connecting to public OneNET mqtt broker.....");
-      if (mqttclient.connect(ONENET_CLIENT_ID, ONENET_USERNAME, onenet_token)) {
-          Serial.println("OneNET mqtt broker connected");
-      } else {
-          Serial.print("failed with state ");
-          Serial.print(mqttclient.state());
-          delay(10000);
-      }
+  if (!mqttclient.loop()) {
+    Serial.println("Connecting to public OneNET mqtts broker.....");
+    if (mqttclient.connect(ONENET_CLIENT_ID, ONENET_USERNAME, onenet_token)) {
+      Serial.println("OneNET mqtts broker connected");
+    } else {
+      Serial.print("failed with state ");
+      Serial.println(mqttclient.state());
+    }
+  } else {
+    Serial.println("Connection to public OneNET mqtts broker is alive!");
   }
+  Serial.println();
+  delay(10000);
 }
 
 char* encode(const char* input) {
