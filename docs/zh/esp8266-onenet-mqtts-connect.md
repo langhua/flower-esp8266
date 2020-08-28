@@ -813,7 +813,7 @@ X509List cert(cacert);
   client.setInsecure();
 ```
 
-在设置OneNET MQTTS服务器地址时，必须使用IPAddress:
+**在设置OneNET MQTTS服务器地址时，必须使用IPAddress**:
 
 ```C++
 IPAddress mqtt_ip(183, 230, 40, 16);
@@ -827,7 +827,7 @@ IPAddress mqtt_ip(183, 230, 40, 16);
 
 <br/>
 
-代码可以修改为使用域名方式连接OneNET MQTTS服务器：
+**如果使用域名方式连接OneNET MQTTS服务器，会失败**：
 
 ```c++
 #define ONENET_SERVER "183.230.40.16"
