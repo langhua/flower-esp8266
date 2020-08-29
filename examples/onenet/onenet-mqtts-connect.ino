@@ -15,8 +15,8 @@
 #define HASH_SIZE 32
 
 #ifndef STASSID
-#define STASSID "62104"
-#define STAPSK  "SJHZGHSZC1997"
+#define STASSID "ssid"
+#define STAPSK  "password"
 #endif
 
 const char *ssid = STASSID;
