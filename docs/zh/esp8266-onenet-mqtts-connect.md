@@ -807,7 +807,7 @@ X509List cert(cacert);
   client.setTrustAnchors(&cert);
 ```
 
-当然，不检查证书，或者说信任任何证书，也是可以的。例如，直接使用：
+上面的CA证书，是从[OneNET MQTT物联网套件开发指南](https://open.iot.10086.cn/doc/mqtt/book/device-develop/manual.html)页面上下载的CA证书。当然，不检查证书，或者说信任任何证书，也是可以的。例如，直接使用：
 
 ```c++
   client.setInsecure();
