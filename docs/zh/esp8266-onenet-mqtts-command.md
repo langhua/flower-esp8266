@@ -1,3 +1,26 @@
+# ESP8266接受OneNET MQTTS命令
+
+本节是说明ESP8266如何接收和响应OneNET MQTTS命令，设计的场景ESP8266每10秒向OneNET提交一次温度和湿度数据，同时接收OneNET上下发的命令，做出响应，并反馈给OneNET。
+
+接收的命令有三个：
+
+1. PowerOn：伺服电机（Micro Servo 9G）转到180度位置。
+2. PowerOff：伺服电机转到90度位置。
+3. MotorAngle：返回伺服电机当前角度数。
+
+<br/>
+
+### 伺服电机SG90接线
+
+SG90有三根线，红色接5V，棕色接地，橘黄色我接在了D6。
+
+<br/>
+
+### 代码说明
+
+下面的代码是在[ESP8266发布/订阅OneNET MQTTS](esp8266-onenet-mqtts-pubsub.md)基础上修改的：
+
+```c++
 #include <ESP8266WiFi.h>
 #include <WiFiClientSecure.h>
 #include <time.h>
@@ -14,6 +37,8 @@
 
 #include "DHT.h"
 #include <LiquidCrystal.h>
+
+#include <Servo.h>
 
 // for ESP8266
 #define D0 16
@@ -35,6 +60,8 @@ DHT dht(DHTPIN, DHTTYPE);
 
 // LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
 LiquidCrystal lcd(D0, D1, D2, D3, D4, D5);
+
+Servo servo;
 
 #define HASH_SIZE 32
 
@@ -60,20 +87,6 @@ const char *pass = STAPSK;
 IPAddress mqtt_ip(183, 230, 40, 16);
 #define ONENET_SERVER "183.230.40.16"
 #define ONENET_SERVER_PORT 8883
-
-void callback(char* topic, byte* payload, unsigned int length) {
-  Serial.print("Message arrived [");
-  Serial.print(topic);
-  Serial.print("]: ");
-  for (int i=0; i < length; i++) {
-    char receivedChar = (char)payload[i];
-    Serial.print(receivedChar);
-    //****
-    //Do some action based on message received
-    //***
-  }
-  Serial.println();
-}
 
 static const char cacert[] PROGMEM = R"EOF(
 -----BEGIN CERTIFICATE-----
@@ -106,12 +119,55 @@ char pub_topic[1024];
 char pub_json[1024];
 char sub_accepted_topic[1024];
 char sub_rejected_topic[1024];
+char sub_cmd_topic[1024];
+int topic_counter = 0;
+
+void callback(char* topic, byte* payload, unsigned int length) {
+  Serial.print("Message arrived [");
+  Serial.print(topic);
+  Serial.print("]: ");
+  char receivedChar[length + 1];
+  for (int i=0; i < length; i++) {
+    receivedChar[i] = (char)payload[i];
+    Serial.print(receivedChar[i]);
+  }
+  receivedChar[length] = '\0';
+  std::string topicString = topic;
+  std::string::size_type idx = topicString.find("/cmd/request/");
+  if (idx != std::string::npos) {
+    // 13 is the length of /cmd/request/
+    std::string cmdId = topicString.substr(idx + 13);
+    Serial.print(" ... comId: ");
+    Serial.println(cmdId.c_str());
+    // publish a response that command received
+    char cmdResTopic[1024];
+    getOnenetCmdResTopic(cmdResTopic, cmdId);
+    char cmdResPayload[1024];
+    generateOnenetCmdResPayload(cmdResPayload, receivedChar);
+    Serial.print("Publish [");
+    Serial.print(cmdResTopic);
+    Serial.print("]: ");
+    Serial.println(cmdResPayload);
+    mqttclient.publish(cmdResTopic, cmdResPayload);
+
+    if (strcmp(receivedChar, "PowerOn") == 0) {
+      servo.write(180);
+    } else if (strcmp(receivedChar, "PowerOff") == 0) {
+      servo.write(90);
+    }
+  } else {
+    Serial.println();
+  }
+}
 
 void setup() {
   Serial.begin(115200);
   // 初始化LCD和DHT11
   lcd.begin(16, 2);
   dht.begin();
+
+  // SG90控制线接在D6
+  servo.attach(D6);
 
   Serial.println();
   Serial.println();
@@ -129,7 +185,7 @@ void setup() {
   Serial.println("");
 
   Serial.println("WiFi connected");
-  Serial.println("IP address: ");
+  Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
 
   setClock();
@@ -242,6 +298,7 @@ void setup() {
 
   getOnenetPubtopic(pub_topic);
   getOnenetSubtopic(sub_accepted_topic, sub_rejected_topic);
+  getOnenetCmdtopic(sub_cmd_topic);
 }
 
 void loop() {
@@ -284,6 +341,12 @@ void loop() {
       result = mqttclient.subscribe(sub_rejected_topic, 0);
       Serial.println(result);
 
+      Serial.print("Subscribe command topic: ");
+      Serial.print(sub_cmd_topic);
+      Serial.print(" ... ");
+      result = mqttclient.subscribe(sub_cmd_topic, 0);
+      Serial.println(result);
+
       publishTempHumi(now, t, h);
     } else {
       Serial.print("failed with state ");
@@ -292,10 +355,17 @@ void loop() {
   } else {
     Serial.println("Connection to public OneNET mqtts broker is alive!");
     Serial.println("OneNET mqtts broker connected");
-    publishTempHumi(now, t, h);
+    if (topic_counter == 0) {
+      publishTempHumi(now, t, h);
+    }
   }
   Serial.println();
-  delay(10000);
+  delay(2000);
+  if (topic_counter > 5) {
+    topic_counter = 0;
+  } else {
+    topic_counter++;
+  }
 }
 
 char* encode(const char* input) {
@@ -504,3 +574,140 @@ void getOnenetSubtopic(char sub_accepted_topic[], char sub_rejected_topic[]) {
   ss.str("");
   *temp = 0;
 }
+
+void getOnenetCmdtopic(char sub_cmd_topic[]) {
+  std::stringstream ss;
+  ss << "$sys/" << ONENET_USERNAME << "/" 
+     << ONENET_CLIENT_ID 
+     << "/cmd/request/#";
+  char* temp = &*ss.str().begin();
+  memcpy(sub_cmd_topic, temp, strlen(temp) + 1);
+  ss.str("");
+  *temp = 0;
+}
+
+void getOnenetCmdResTopic(char sub_cmd_res_topic[], std::string cmdId) {
+  std::stringstream ss;
+  ss << "$sys/" << ONENET_USERNAME << "/" 
+     << ONENET_CLIENT_ID 
+     << "/cmd/response/"
+     << cmdId;
+  char* temp = &*ss.str().begin();
+  memcpy(sub_cmd_res_topic, temp, strlen(temp) + 1);
+  ss.str("");
+  *temp = 0;
+}
+
+void generateOnenetCmdResPayload(char cmdResPayload[], char receivedChar[]) {
+  std::stringstream ss;
+  ss << "Command [" << receivedChar << "]" 
+     << " received.";
+  if (strcmp(receivedChar, "MotorAngle") == 0) {
+    ss << "Motor angle: " << servo.read() << ".";
+  }
+  char* temp = &*ss.str().begin();
+  memcpy(cmdResPayload, temp, strlen(temp) + 1);
+  ss.str("");
+  *temp = 0;
+}
+```
+
+<br/>
+
+代码第18行，引入Arduino自带的Servo库：
+
+```c++
+#include <Servo.h>
+```
+
+第41行，定义了一个全局Servo对象：
+
+```c++
+Servo servo;
+```
+
+<br/>
+
+代码第102-138行，在接收到命令后，把响应发布到OneNET上：
+
+```c++
+void callback(char* topic, byte* payload, unsigned int length) {
+  Serial.print("Message arrived [");
+  Serial.print(topic);
+  Serial.print("]: ");
+  char receivedChar[length + 1];
+  for (int i=0; i < length; i++) {
+    receivedChar[i] = (char)payload[i];
+    Serial.print(receivedChar[i]);
+  }
+  receivedChar[length] = '\0';
+  std::string topicString = topic;
+  std::string::size_type idx = topicString.find("/cmd/request/");
+  if (idx != std::string::npos) {
+    // 13 is the length of /cmd/request/
+    std::string cmdId = topicString.substr(idx + 13);
+    Serial.print(" ... comId: ");
+    Serial.println(cmdId.c_str());
+    // publish a response that command received
+    char cmdResTopic[1024];
+    getOnenetCmdResTopic(cmdResTopic, cmdId);
+    char cmdResPayload[1024];
+    generateOnenetCmdResPayload(cmdResPayload, receivedChar);
+    Serial.print("Publish [");
+    Serial.print(cmdResTopic);
+    Serial.print("]: ");
+    Serial.println(cmdResPayload);
+    mqttclient.publish(cmdResTopic, cmdResPayload);
+
+    if (strcmp(receivedChar, "PowerOn") == 0) {
+      servo.write(180);
+    } else if (strcmp(receivedChar, "PowerOff") == 0) {
+      servo.write(90);
+    }
+  } else {
+    Serial.println();
+  }
+}
+```
+
+<br/>
+
+第578-589行，是生成OneNET命令的响应信息，当命令是MotorAngle时，把伺服电机的角度数据放到响应信息里：
+
+```c++
+void generateOnenetCmdResPayload(char cmdResPayload[], char receivedChar[]) {
+  std::stringstream ss;
+  ss << "Command [" << receivedChar << "]" 
+     << " received.";
+  if (strcmp(receivedChar, "MotorAngle") == 0) {
+    ss << "Motor angle: " << servo.read() << ".";
+  }
+  char* temp = &*ss.str().begin();
+  memcpy(cmdResPayload, temp, strlen(temp) + 1);
+  ss.str("");
+  *temp = 0;
+}
+```
+
+<br/>
+
+
+运行上述代码，访问OneNET MQTT套件的后台，下发命令和接收响应信息，如下图所示：
+
+![onenet mqtts command and reponse](images/onenet/onenet-mqtts-command-poweroff.png)
+
+<br/>
+
+
+
+### 参考资料
+
+1. Arduino PubSubClient: [https://www.arduinolibraries.info/libraries/pub-sub-client](https://www.arduinolibraries.info/libraries/pub-sub-client)
+
+2. Auduino PubSubClient源代码：[https://github.com/knolleary/pubsubclient/](https://github.com/knolleary/pubsubclient/)
+
+3. OneNET MQTT物联网套件开发指南：[https://open.iot.10086.cn/doc/mqtt/book/device-develop/manual.html](https://open.iot.10086.cn/doc/mqtt/book/device-develop/manual.html)
+
+4. OneNET MQTT物联网套件-设备命令 topic 簇：[https://open.iot.10086.cn/doc/mqtt/book/device-develop/topics/cmd-topics.html](https://open.iot.10086.cn/doc/mqtt/book/device-develop/topics/cmd-topics.html)
+
+5. 利用Nodemcu控制SG90舵机：[https://www.basemu.com/servo-motor-sg90-with-nodemcu.html](https://www.basemu.com/servo-motor-sg90-with-nodemcu.html)

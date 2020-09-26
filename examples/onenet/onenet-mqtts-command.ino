@@ -15,6 +15,8 @@
 #include "DHT.h"
 #include <LiquidCrystal.h>
 
+#include <Servo.h>
+
 // for ESP8266
 #define D0 16
 #define D1 5
@@ -35,6 +37,8 @@ DHT dht(DHTPIN, DHTTYPE);
 
 // LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
 LiquidCrystal lcd(D0, D1, D2, D3, D4, D5);
+
+Servo servo;
 
 #define HASH_SIZE 32
 
@@ -60,20 +64,6 @@ const char *pass = STAPSK;
 IPAddress mqtt_ip(183, 230, 40, 16);
 #define ONENET_SERVER "183.230.40.16"
 #define ONENET_SERVER_PORT 8883
-
-void callback(char* topic, byte* payload, unsigned int length) {
-  Serial.print("Message arrived [");
-  Serial.print(topic);
-  Serial.print("]: ");
-  for (int i=0; i < length; i++) {
-    char receivedChar = (char)payload[i];
-    Serial.print(receivedChar);
-    //****
-    //Do some action based on message received
-    //***
-  }
-  Serial.println();
-}
 
 static const char cacert[] PROGMEM = R"EOF(
 -----BEGIN CERTIFICATE-----
@@ -106,12 +96,55 @@ char pub_topic[1024];
 char pub_json[1024];
 char sub_accepted_topic[1024];
 char sub_rejected_topic[1024];
+char sub_cmd_topic[1024];
+int topic_counter = 0;
+
+void callback(char* topic, byte* payload, unsigned int length) {
+  Serial.print("Message arrived [");
+  Serial.print(topic);
+  Serial.print("]: ");
+  char receivedChar[length + 1];
+  for (int i=0; i < length; i++) {
+    receivedChar[i] = (char)payload[i];
+    Serial.print(receivedChar[i]);
+  }
+  receivedChar[length] = '\0';
+  std::string topicString = topic;
+  std::string::size_type idx = topicString.find("/cmd/request/");
+  if (idx != std::string::npos) {
+    // 13 is the length of /cmd/request/
+    std::string cmdId = topicString.substr(idx + 13);
+    Serial.print(" ... comId: ");
+    Serial.println(cmdId.c_str());
+    // publish a response that command received
+    char cmdResTopic[1024];
+    getOnenetCmdResTopic(cmdResTopic, cmdId);
+    char cmdResPayload[1024];
+    generateOnenetCmdResPayload(cmdResPayload, receivedChar);
+    Serial.print("Publish [");
+    Serial.print(cmdResTopic);
+    Serial.print("]: ");
+    Serial.println(cmdResPayload);
+    mqttclient.publish(cmdResTopic, cmdResPayload);
+
+    if (strcmp(receivedChar, "PowerOn") == 0) {
+      servo.write(180);
+    } else if (strcmp(receivedChar, "PowerOff") == 0) {
+      servo.write(90);
+    }
+  } else {
+    Serial.println();
+  }
+}
 
 void setup() {
   Serial.begin(115200);
   // 初始化LCD和DHT11
   lcd.begin(16, 2);
   dht.begin();
+
+  // SG90控制线接在D6
+  servo.attach(D6);
 
   Serial.println();
   Serial.println();
@@ -129,7 +162,7 @@ void setup() {
   Serial.println("");
 
   Serial.println("WiFi connected");
-  Serial.println("IP address: ");
+  Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
 
   setClock();
@@ -242,6 +275,7 @@ void setup() {
 
   getOnenetPubtopic(pub_topic);
   getOnenetSubtopic(sub_accepted_topic, sub_rejected_topic);
+  getOnenetCmdtopic(sub_cmd_topic);
 }
 
 void loop() {
@@ -284,6 +318,12 @@ void loop() {
       result = mqttclient.subscribe(sub_rejected_topic, 0);
       Serial.println(result);
 
+      Serial.print("Subscribe command topic: ");
+      Serial.print(sub_cmd_topic);
+      Serial.print(" ... ");
+      result = mqttclient.subscribe(sub_cmd_topic, 0);
+      Serial.println(result);
+
       publishTempHumi(now, t, h);
     } else {
       Serial.print("failed with state ");
@@ -292,10 +332,17 @@ void loop() {
   } else {
     Serial.println("Connection to public OneNET mqtts broker is alive!");
     Serial.println("OneNET mqtts broker connected");
-    publishTempHumi(now, t, h);
+    if (topic_counter == 0) {
+      publishTempHumi(now, t, h);
+    }
   }
   Serial.println();
-  delay(10000);
+  delay(2000);
+  if (topic_counter > 5) {
+    topic_counter = 0;
+  } else {
+    topic_counter++;
+  }
 }
 
 char* encode(const char* input) {
@@ -501,6 +548,42 @@ void getOnenetSubtopic(char sub_accepted_topic[], char sub_rejected_topic[]) {
      << "/dp/post/json/rejected";
   temp = &*ss.str().begin();
   memcpy(sub_rejected_topic, temp, strlen(temp) + 1);
+  ss.str("");
+  *temp = 0;
+}
+
+void getOnenetCmdtopic(char sub_cmd_topic[]) {
+  std::stringstream ss;
+  ss << "$sys/" << ONENET_USERNAME << "/" 
+     << ONENET_CLIENT_ID 
+     << "/cmd/request/#";
+  char* temp = &*ss.str().begin();
+  memcpy(sub_cmd_topic, temp, strlen(temp) + 1);
+  ss.str("");
+  *temp = 0;
+}
+
+void getOnenetCmdResTopic(char sub_cmd_res_topic[], std::string cmdId) {
+  std::stringstream ss;
+  ss << "$sys/" << ONENET_USERNAME << "/" 
+     << ONENET_CLIENT_ID 
+     << "/cmd/response/"
+     << cmdId;
+  char* temp = &*ss.str().begin();
+  memcpy(sub_cmd_res_topic, temp, strlen(temp) + 1);
+  ss.str("");
+  *temp = 0;
+}
+
+void generateOnenetCmdResPayload(char cmdResPayload[], char receivedChar[]) {
+  std::stringstream ss;
+  ss << "Command [" << receivedChar << "]" 
+     << " received.";
+  if (strcmp(receivedChar, "MotorAngle") == 0) {
+    ss << "Motor angle: " << servo.read() << ".";
+  }
+  char* temp = &*ss.str().begin();
+  memcpy(cmdResPayload, temp, strlen(temp) + 1);
   ss.str("");
   *temp = 0;
 }
