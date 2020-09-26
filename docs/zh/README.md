@@ -22,6 +22,16 @@ Use ESP8266 as IoT device to demo business concept
 
 <br/>
 
+**Arduino首选项**
+
+在Arduino中，选择菜单【文件】->【首选项】->【附加开发板管理器网址】中，输入：
+
+```
+​http://arduino.esp8266.com/stable/package_esp8266com_index.json
+```
+
+<br/>
+
 ### Contents
 * [ESP8266测量和显示温度/湿度](esp8266-dht11-lcd1602.md) 
 * [ESP8266联WiFi上网](esp8266-wifi-http.md)
@@ -39,4 +49,5 @@ Use ESP8266 as IoT device to demo business concept
 * [ESP8266生成OneNET MQTTS密码(SHA256)](esp8266-onenet-mqtts-password-sha256.md)
 * [ESP8266连接OneNET MQTTS](esp8266-onenet-mqtts-connect.md)
 * [ESP8266发布/订阅OneNET MQTTS](esp8266-onenet-mqtts-pubsub.md)
+* [ESP8266接受OneNET MQTTS命令](esp8266-onenet-mqtts-command.md)
 
