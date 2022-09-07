@@ -68,6 +68,8 @@ void loop() {
   float t = dht.readTemperature();
   if (isnan(t) || isnan(h)) {
     Serial.println("Failed to read from DHT");
+    lcd.setCursor(0, 0);
+    lcd.print("Failed!");
   } else {
     lcd.setCursor(0, 0);
     lcd.print("Temp=");

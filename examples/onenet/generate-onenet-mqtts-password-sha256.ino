@@ -32,6 +32,7 @@ const char *pass = STAPSK;
 
 void setup() {
   Serial.begin(115200);
+  delay(1000);
   Serial.println();
   Serial.println();
 

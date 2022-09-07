@@ -139,6 +139,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
 void setup() {
   Serial.begin(115200);
+  delay(1000);
   // 初始化LCD和DHT11
   lcd.begin(16, 2);
   dht.begin();

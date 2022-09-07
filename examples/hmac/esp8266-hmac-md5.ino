@@ -5,6 +5,7 @@ byte result[16];
 
 void setup() {
   Serial.begin(9600);
+  delay(1000);
   Serial.println();
   Serial.println("测试HMAC-MD5");
   Serial.println("--------------------------------------------");

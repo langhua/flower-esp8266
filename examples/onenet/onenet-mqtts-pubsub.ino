@@ -109,6 +109,7 @@ char sub_rejected_topic[1024];
 
 void setup() {
   Serial.begin(115200);
+  delay(1000);
   // 初始化LCD和DHT11
   lcd.begin(16, 2);
   dht.begin();
