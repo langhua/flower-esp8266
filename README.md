@@ -33,7 +33,7 @@ You can find [Arduino RFID Starter Kit](https://www.aliexpress.com/wholesale?cat
 在Arduino中，选择菜单【文件】->【首选项】->【附加开发板管理器网址】中，输入：
 
 ```
-​http://arduino.esp8266.com/stable/package_esp8266com_index.json
+http://arduino.esp8266.com/stable/package_esp8266com_index.json
 ```
 
 <br/>
@@ -56,4 +56,14 @@ You can find [Arduino RFID Starter Kit](https://www.aliexpress.com/wholesale?cat
 * [ESP8266连接OneNET MQTTS](docs/zh/esp8266-onenet-mqtts-connect.md)
 * [ESP8266发布/订阅OneNET MQTTS](docs/zh/esp8266-onenet-mqtts-pubsub.md)
 * [ESP8266接受OneNET MQTTS命令](docs/zh/esp8266-onenet-mqtts-command.md)
+* [ESP8266 RC522读卡](docs/zh/esp8266-rc522-onenet-mqtts.md)
+
+
+#### Retail
+* []()
+* []()
+
+
+#### Home
+
 

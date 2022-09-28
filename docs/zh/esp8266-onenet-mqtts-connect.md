@@ -421,8 +421,8 @@ void loop() {
 #define HASH_SIZE 32
 
 #ifndef STASSID
-#define STASSID "62104"
-#define STAPSK  "SJHZGHSZC1997"
+#define STASSID "your-ssid"
+#define STAPSK  "your-passwd"
 #endif
 
 const char *ssid = STASSID;

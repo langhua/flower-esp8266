@@ -1,26 +1,3 @@
-# ESP8266接受OneNET MQTTS命令
-
-本节是说明ESP8266如何接收和响应OneNET MQTTS命令，设计的场景ESP8266每10秒向OneNET提交一次温度和湿度数据，同时接收OneNET上下发的命令，做出响应，并反馈给OneNET。
-
-接收的命令有三个：
-
-1. 开门：伺服电机（Micro Servo 9G）转到0度位置。
-2. 关门：伺服电机转到93度位置。
-3. 度数：返回伺服电机当前角度数。
-
-<br/>
-
-### 伺服电机SG90接线
-
-SG90有三根线，红色接5V，棕色接地，橘黄色我接在了D0。
-
-<br/>
-
-### 代码说明
-
-下面的代码是在[ESP8266发布/订阅OneNET MQTTS](esp8266-onenet-mqtts-pubsub.md)基础上修改的：
-
-```c++
 #include <ESP8266WiFi.h>
 #include <WiFiClientSecure.h>
 #include <time.h>
@@ -36,9 +13,12 @@ SG90有三根线，红色接5V，棕色接地，橘黄色我接在了D0。
 #include <PubSubClient.h>
 
 #include "DHT.h"
-#include <LiquidCrystal.h>
+#include <LiquidCrystal_I2C.h>
 
 #include <Servo.h>
+
+#include <SPI.h>
+#include <MFRC522.h>
 
 // for ESP8266
 #define D0 16
@@ -53,13 +33,54 @@ SG90有三根线，红色接5V，棕色接地，橘黄色我接在了D0。
 #define RX 3 // D9
 #define TX 1 // D10
 
+// for ESP8266, SDA(SS) -> D8, SCK -> D5, MOSI -> D7, MISO -> D6, RST -> D3
+#define SS_PIN D8
+#define RST_PIN D3
+MFRC522 rfid(SS_PIN, RST_PIN); // Instance of the class
+MFRC522::MIFARE_Key key;
+
+// Init array that will store new NUID
+byte nuidPICC[4];
+
 #define DHTPIN RX
-#define DHTTYPE DHT11 
+#define DHTTYPE DHT11
 
 DHT dht(DHTPIN, DHTTYPE);
 
-// LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
-LiquidCrystal lcd(D0, D1, D2, D3, D4, D5);
+byte findI2CAddress() {
+  Serial.println ();
+  Serial.println ("I2C scanner. Scanning ...");
+  byte count = 0;
+  byte i2cAddr = 0;
+
+  Wire.begin();
+  for (byte i = 8; i < 120; i++)
+  {
+    Wire.beginTransmission (i);
+    if (Wire.endTransmission () == 0)
+      {
+      Serial.print ("Found address: ");
+      Serial.print (i, DEC);
+      Serial.print (" (0x");
+      Serial.print (i, HEX);
+      Serial.println (")");
+      if (i2cAddr == 0) {
+        i2cAddr = i;
+      }
+      count++;
+      delay (1);  // maybe unneeded?
+      } // end of good response
+  } // end of for loop
+  Serial.println ("Done.");
+  Serial.print ("Found ");
+  Serial.print (count, DEC);
+  Serial.println (" device(s).");
+  return i2cAddr;
+}
+
+// 初始化LCD
+// LCD1602设备地址，这里的地址是0x3F，也可能是0x20，或者0x27；SCL接D1，SDA接D2。
+LiquidCrystal_I2C lcd(findI2CAddress(), D1, D2);
 
 Servo servo;
 
@@ -67,7 +88,7 @@ Servo servo;
 
 #ifndef STASSID
 #define STASSID "your-ssid"
-#define STAPSK  "your-password"
+#define STAPSK  "your-pass"
 #endif
 
 const char *ssid = STASSID;
@@ -111,7 +132,7 @@ WzdhzTYwVkxBaU+xf/2w
 -----END CERTIFICATE-----
 )EOF";
 
-WiFiClientSecure client; 
+WiFiClientSecure client;
 PubSubClient mqttclient(client);
 X509List cert(cacert);
 char onenet_token[1024];
@@ -150,11 +171,11 @@ void callback(char* topic, byte* payload, unsigned int length) {
     Serial.println(cmdResPayload);
     mqttclient.publish(cmdResTopic, cmdResPayload);
 
-    // 缺省是93度
+    // 缺省93度
     if (strcmp(receivedChar, "开门") == 0) {
       servo.write(0);
     } else if (strcmp(receivedChar, "关门") == 0) {
-      servo.write(93);
+      servo.write(90);
     }
   } else {
     Serial.println();
@@ -165,6 +186,7 @@ void setup() {
   Serial.begin(115200);
   // 初始化LCD和DHT11
   lcd.begin(16, 2);
+  lcd.backlight();
   dht.begin();
 
   // SG90控制线接在D0
@@ -286,8 +308,8 @@ void setup() {
   ss.clear();
   ss.str("");
 
-  // client.setInsecure();
-  client.setTrustAnchors(&cert);
+  client.setInsecure();
+  // client.setTrustAnchors(&cert);
   setClock();
 
   // 配置MQTT客户端
@@ -300,14 +322,30 @@ void setup() {
   getOnenetPubtopic(pub_topic);
   getOnenetSubtopic(sub_accepted_topic, sub_rejected_topic);
   getOnenetCmdtopic(sub_cmd_topic);
+
+  // RC522
+  SPI.begin(); // Init SPI bus
+  rfid.PCD_Init(); // Init MFRC522
+  rfid.PCD_SetAntennaGain(0x07 << 4); // Set to 48db
+  // rfid.PCD_SetAntennaGain(0x07 << 4);
+  for (byte i = 0; i < 6; i++) {
+    key.keyByte[i] = 0xFF;
+  }
+  Serial.println(F("This code scan the MIFARE Classsic NUID."));
+  Serial.print(F("Using the following key:"));
+  printHex(key.keyByte, MFRC522::MF_KEY_SIZE);
+  Serial.println();
 }
 
 void loop() {
   time_t now = time(nullptr);
   float h = dht.readHumidity();
   float t = dht.readTemperature();
+  lcd.clear();
   if (isnan(t) || isnan(h)) {
     Serial.println("Failed to read from DHT");
+    lcd.setCursor(0, 0);
+    lcd.print("Failed");
   } else {
     lcd.setCursor(0, 0);
     lcd.print("Temp=");
@@ -324,7 +362,7 @@ void loop() {
     Serial.print(h);
     Serial.println("%");
   }
-  
+
   if (!mqttclient.loop()) {
     Serial.println("Connecting to public OneNET mqtts broker.....");
     if (mqttclient.connect(ONENET_CLIENT_ID, ONENET_USERNAME, onenet_token)) {
@@ -367,6 +405,59 @@ void loop() {
   } else {
     topic_counter++;
   }
+
+  // Reset the loop if no new card present on the sensor/reader. This saves the entire process when idle.
+  if ( ! rfid.PICC_IsNewCardPresent())
+    return;
+
+  // Verify if the NUID has been readed
+  if ( ! rfid.PICC_ReadCardSerial())
+    return;
+
+  Serial.print(F("PICC type: "));
+  MFRC522::PICC_Type piccType = rfid.PICC_GetType(rfid.uid.sak);
+  Serial.println(rfid.PICC_GetTypeName(piccType));
+
+  // Check is the PICC of Classic MIFARE type
+  if (piccType != MFRC522::PICC_TYPE_MIFARE_MINI &&
+    piccType != MFRC522::PICC_TYPE_MIFARE_1K &&
+    piccType != MFRC522::PICC_TYPE_MIFARE_4K) {
+    Serial.println(F("Your tag is not of type MIFARE Classic."));
+    return;
+  }
+
+  if (rfid.uid.uidByte[0] != nuidPICC[0] ||
+    rfid.uid.uidByte[1] != nuidPICC[1] ||
+    rfid.uid.uidByte[2] != nuidPICC[2] ||
+    rfid.uid.uidByte[3] != nuidPICC[3] ) {
+    Serial.println(F("A new card has been detected."));
+
+    // Store NUID into nuidPICC array
+    for (byte i = 0; i < 4; i++) {
+      nuidPICC[i] = rfid.uid.uidByte[i];
+    }
+
+    Serial.println(F("The NUID tag is:"));
+    Serial.print(F("In hex: "));
+    printHex(rfid.uid.uidByte, rfid.uid.size);
+    Serial.println();
+    Serial.print(F("In dec: "));
+    printDec(rfid.uid.uidByte, rfid.uid.size);
+    Serial.println();
+  }
+  else Serial.println(F("Card read previously."));
+
+  // Halt PICC
+  rfid.PICC_HaltA();
+
+  // Stop encryption on PCD
+  rfid.PCD_StopCrypto1();
+
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print(bytes2HexString(rfid.uid.uidByte, rfid.uid.size));
+  toggleServo();
+  delay(3000);
 }
 
 char* encode(const char* input) {
@@ -378,22 +469,22 @@ char* encode(const char* input) {
   int cnt = 0;
   /* we need an encoder state */
   base64_encodestate s;
-  
+
   /*---------- START ENCODING ----------*/
   /* initialise the encoder state */
   base64_init_encodestate(&s);
   /* gather data from the input and send it to the output */
   cnt = base64_encode_block(input, strlen(input), c, &s);
   c += cnt;
-  /* since we have encoded the entire input string, we know that 
+  /* since we have encoded the entire input string, we know that
      there is no more input data; finalise the encoding */
   cnt = base64_encode_blockend(c, &s);
   c += cnt;
   /*---------- STOP ENCODING  ----------*/
-  
+
   /* we want to print the encoded data, so null-terminate it: */
   *c = 0;
-  
+
   return output;
 }
 
@@ -406,7 +497,7 @@ char* decode(const char* input) {
   int cnt = 0;
   /* we need a decoder state */
   base64_decodestate s;
-  
+
   /*---------- START DECODING ----------*/
   /* initialise the decoder state */
   base64_init_decodestate(&s);
@@ -415,10 +506,10 @@ char* decode(const char* input) {
   c += cnt;
   /* note: there is no base64_decode_blockend! */
   /*---------- STOP DECODING  ----------*/
-  
+
   /* we want to print the decoded data, so null-terminate it: */
   *c = 0;
-  
+
   return output;
 }
 
@@ -433,6 +524,7 @@ void crypto_hmac_sha256(char* key, size_t keyLength, char* msg, size_t msgLength
 
 // Set time via NTP, as required for x.509 validation
 void setClock() {
+  // configTime(3 * 3600, 0, "ntp.ntsc.ac.cn", "cn.ntp.org.cn");
   configTime(3 * 3600, 0, "pool.ntp.org", "time.nist.gov");
 
   Serial.print("Waiting for NTP time sync: ");
@@ -473,7 +565,7 @@ void base64_string_from_bytes(byte bytes[], int bytes_size, char result_char[]) 
     octet4 = byte3 & 63;
 
     // Map octets to characters
-    ss << base64_alphabet[octet1] 
+    ss << base64_alphabet[octet1]
        << base64_alphabet[octet2]
        << (byte2 != NULL ? base64_alphabet[octet3] : base64_padding)
        << (byte3 != NULL ? base64_alphabet[octet4] : base64_padding);
@@ -516,8 +608,8 @@ void url_encode(char str_to_encode[], int str_length, char result_char[]) {
 
 void getOnenetPubtopic(char pub_topic[]) {
   std::stringstream ss;
-  ss << "$sys/" << ONENET_USERNAME << "/" 
-     << ONENET_CLIENT_ID 
+  ss << "$sys/" << ONENET_USERNAME << "/"
+     << ONENET_CLIENT_ID
      << "/dp/post/json";
   char* temp = &*ss.str().begin();
   memcpy(pub_topic, temp, strlen(temp) + 1);
@@ -530,9 +622,9 @@ void generateOnenetPubJson(char pub_json[], float temperature, float humidity, t
   Serial.print("id[");
   Serial.print(now);
   Serial.print("] ... ");
-  ss << "{'id':" << now 
-     << ",'dp':{'temperature':[{'v':" << temperature << ",'t':" << now 
-     << "}],'humidity':[{'v':" << humidity << ",'t':" << now 
+  ss << "{'id':" << now
+     << ",'dp':{'temperature':[{'v':" << temperature << ",'t':" << now
+     << "}],'humidity':[{'v':" << humidity << ",'t':" << now
      << "}]}}";
   char* temp = &*ss.str().begin();
   memcpy(pub_json, temp, strlen(temp) + 1);
@@ -559,16 +651,16 @@ void publishTempHumi(time_t now, float t, float h) {
 
 void getOnenetSubtopic(char sub_accepted_topic[], char sub_rejected_topic[]) {
   std::stringstream ss;
-  ss << "$sys/" << ONENET_USERNAME << "/" 
-     << ONENET_CLIENT_ID 
+  ss << "$sys/" << ONENET_USERNAME << "/"
+     << ONENET_CLIENT_ID
      << "/dp/post/json/accepted";
   char* temp = &*ss.str().begin();
   memcpy(sub_accepted_topic, temp, strlen(temp) + 1);
   ss.str("");
   *temp = 0;
 
-  ss << "$sys/" << ONENET_USERNAME << "/" 
-     << ONENET_CLIENT_ID 
+  ss << "$sys/" << ONENET_USERNAME << "/"
+     << ONENET_CLIENT_ID
      << "/dp/post/json/rejected";
   temp = &*ss.str().begin();
   memcpy(sub_rejected_topic, temp, strlen(temp) + 1);
@@ -578,8 +670,8 @@ void getOnenetSubtopic(char sub_accepted_topic[], char sub_rejected_topic[]) {
 
 void getOnenetCmdtopic(char sub_cmd_topic[]) {
   std::stringstream ss;
-  ss << "$sys/" << ONENET_USERNAME << "/" 
-     << ONENET_CLIENT_ID 
+  ss << "$sys/" << ONENET_USERNAME << "/"
+     << ONENET_CLIENT_ID
      << "/cmd/request/#";
   char* temp = &*ss.str().begin();
   memcpy(sub_cmd_topic, temp, strlen(temp) + 1);
@@ -589,8 +681,8 @@ void getOnenetCmdtopic(char sub_cmd_topic[]) {
 
 void getOnenetCmdResTopic(char sub_cmd_res_topic[], std::string cmdId) {
   std::stringstream ss;
-  ss << "$sys/" << ONENET_USERNAME << "/" 
-     << ONENET_CLIENT_ID 
+  ss << "$sys/" << ONENET_USERNAME << "/"
+     << ONENET_CLIENT_ID
      << "/cmd/response/"
      << cmdId;
   char* temp = &*ss.str().begin();
@@ -601,7 +693,7 @@ void getOnenetCmdResTopic(char sub_cmd_res_topic[], std::string cmdId) {
 
 void generateOnenetCmdResPayload(char cmdResPayload[], char receivedChar[]) {
   std::stringstream ss;
-  ss << "Command [" << receivedChar << "]" 
+  ss << "Command [" << receivedChar << "]"
      << " received.";
   if (strcmp(receivedChar, "度数") == 0) {
     ss << "度数: " << servo.read() << ".";
@@ -611,105 +703,55 @@ void generateOnenetCmdResPayload(char cmdResPayload[], char receivedChar[]) {
   ss.str("");
   *temp = 0;
 }
-```
 
-<br/>
-
-代码第18行，引入Arduino自带的Servo库：
-
-```c++
-#include <Servo.h>
-```
-
-第41行，定义了一个全局Servo对象：
-
-```c++
-Servo servo;
-```
-
-<br/>
-
-代码第102-138行，在接收到命令后，把响应发布到OneNET上：
-
-```c++
-void callback(char* topic, byte* payload, unsigned int length) {
-  Serial.print("Message arrived [");
-  Serial.print(topic);
-  Serial.print("]: ");
-  char receivedChar[length + 1];
-  for (int i=0; i < length; i++) {
-    receivedChar[i] = (char)payload[i];
-    Serial.print(receivedChar[i]);
+/**
+ * Helper routine to dump a byte array as hex values to Serial.
+ */
+void printHex(byte *buffer, byte bufferSize) {
+  for (byte i = 0; i < bufferSize; i++) {
+    Serial.print(buffer[i] < 0x10 ? " 0" : " ");
+    Serial.print(buffer[i], HEX);
   }
-  receivedChar[length] = '\0';
-  std::string topicString = topic;
-  std::string::size_type idx = topicString.find("/cmd/request/");
-  if (idx != std::string::npos) {
-    // 13 is the length of /cmd/request/
-    std::string cmdId = topicString.substr(idx + 13);
-    Serial.print(" ... comId: ");
-    Serial.println(cmdId.c_str());
-    // publish a response that command received
-    char cmdResTopic[1024];
-    getOnenetCmdResTopic(cmdResTopic, cmdId);
-    char cmdResPayload[1024];
-    generateOnenetCmdResPayload(cmdResPayload, receivedChar);
-    Serial.print("Publish [");
-    Serial.print(cmdResTopic);
-    Serial.print("]: ");
-    Serial.println(cmdResPayload);
-    mqttclient.publish(cmdResTopic, cmdResPayload);
+}
 
-    // 缺省93度
-    if (strcmp(receivedChar, "开门") == 0) {
-      servo.write(0);
-    } else if (strcmp(receivedChar, "关门") == 0) {
-      servo.write(93);
-    }
+/**
+ * Helper routine to dump a byte array as dec values to Serial.
+ */
+void printDec(byte *buffer, byte bufferSize) {
+  for (byte i = 0; i < bufferSize; i++) {
+    Serial.print(buffer[i] < 0x10 ? " 0" : " ");
+    Serial.print(buffer[i], DEC);
+  }
+}
+
+void toggleServo() {
+  Serial.print(" 度数：");
+  lcd.setCursor(0, 1);
+  if (servo.read() == 93) {
+    servo.write(0);
+    Serial.println("0。开门了。");
+    lcd.print("Opened");
   } else {
-    Serial.println();
+    servo.write(93);
+    Serial.println("93。关门了。");
+    lcd.print("Closed");
   }
+  Serial.println();
 }
-```
 
-<br/>
-
-第578-589行，是生成OneNET命令的响应信息，当命令是度数时，把伺服电机的角度数据放到响应信息里：
-
-```c++
-void generateOnenetCmdResPayload(char cmdResPayload[], char receivedChar[]) {
-  std::stringstream ss;
-  ss << "Command [" << receivedChar << "]" 
-     << " received.";
-  if (strcmp(receivedChar, "度数") == 0) {
-    ss << "Motor angle: " << servo.read() << ".";
+/**
+ * Convert a byte array to a HEX string
+ */
+String bytes2HexString(byte *buffer, byte length) {
+  String hexString = "";
+  for (int i = 0; i < length; i++) {
+    if (buffer[i] < 0x10) {
+      hexString += '0';
+    }
+    hexString += String(buffer[i], HEX);
+    if (i < length - 1)
+      hexString += '-';
   }
-  char* temp = &*ss.str().begin();
-  memcpy(cmdResPayload, temp, strlen(temp) + 1);
-  ss.str("");
-  *temp = 0;
+  hexString.toUpperCase();
+  return hexString;
 }
-```
-
-<br/>
-
-
-运行上述代码，访问OneNET MQTT套件的后台，下发命令和接收响应信息，如下图所示：
-
-![onenet mqtts command and reponse](images/onenet/onenet-mqtts-command-doorangle.png)
-
-<br/>
-
-
-
-### 参考资料
-
-1. Arduino PubSubClient: [https://www.arduinolibraries.info/libraries/pub-sub-client](https://www.arduinolibraries.info/libraries/pub-sub-client)
-
-2. Auduino PubSubClient源代码：[https://github.com/knolleary/pubsubclient/](https://github.com/knolleary/pubsubclient/)
-
-3. OneNET MQTT物联网套件开发指南：[https://open.iot.10086.cn/doc/mqtt/book/device-develop/manual.html](https://open.iot.10086.cn/doc/mqtt/book/device-develop/manual.html)
-
-4. OneNET MQTT物联网套件-设备命令 topic 簇：[https://open.iot.10086.cn/doc/mqtt/book/device-develop/topics/cmd-topics.html](https://open.iot.10086.cn/doc/mqtt/book/device-develop/topics/cmd-topics.html)
-
-5. 利用Nodemcu控制SG90舵机：[https://www.basemu.com/servo-motor-sg90-with-nodemcu.html](https://www.basemu.com/servo-motor-sg90-with-nodemcu.html)

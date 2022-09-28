@@ -127,10 +127,11 @@ void callback(char* topic, byte* payload, unsigned int length) {
     Serial.println(cmdResPayload);
     mqttclient.publish(cmdResTopic, cmdResPayload);
 
-    if (strcmp(receivedChar, "PowerOn") == 0) {
-      servo.write(180);
-    } else if (strcmp(receivedChar, "PowerOff") == 0) {
-      servo.write(90);
+    // 缺省是93度
+    if (strcmp(receivedChar, "开门") == 0) {
+      servo.write(0);
+    } else if (strcmp(receivedChar, "关门") == 0) {
+      servo.write(93);
     }
   } else {
     Serial.println();
@@ -142,10 +143,11 @@ void setup() {
   delay(1000);
   // 初始化LCD和DHT11
   lcd.begin(16, 2);
+  lcd.backlight();
   dht.begin();
 
-  // SG90控制线接在D6
-  servo.attach(D6);
+  // SG90控制线接在D0
+  servo.attach(D0);
 
   Serial.println();
   Serial.println();
@@ -580,8 +582,8 @@ void generateOnenetCmdResPayload(char cmdResPayload[], char receivedChar[]) {
   std::stringstream ss;
   ss << "Command [" << receivedChar << "]" 
      << " received.";
-  if (strcmp(receivedChar, "MotorAngle") == 0) {
-    ss << "Motor angle: " << servo.read() << ".";
+  if (strcmp(receivedChar, "度数") == 0) {
+    ss << "度数: " << servo.read() << ".";
   }
   char* temp = &*ss.str().begin();
   memcpy(cmdResPayload, temp, strlen(temp) + 1);

@@ -46,10 +46,8 @@ LiquidCrystal lcd(D0, D1, D2, D3, D4, D5);
 #define HASH_SIZE 32
 
 #ifndef STASSID
-//#define STASSID "62104"
-//#define STAPSK  "SJHZGHSZC1997"
-#define STASSID "hotdot-24G"
-#define STAPSK  "ihaveadream"
+#define STASSID "ssid"
+#define STAPSK  "passwd"
 #endif
 
 const char *ssid = STASSID;
