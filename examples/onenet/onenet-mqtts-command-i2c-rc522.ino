@@ -327,7 +327,6 @@ void setup() {
   SPI.begin(); // Init SPI bus
   rfid.PCD_Init(); // Init MFRC522
   rfid.PCD_SetAntennaGain(0x07 << 4); // Set to 48db
-  // rfid.PCD_SetAntennaGain(0x07 << 4);
   for (byte i = 0; i < 6; i++) {
     key.keyByte[i] = 0xFF;
   }
