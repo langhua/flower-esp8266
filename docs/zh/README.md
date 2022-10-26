@@ -1,6 +1,8 @@
 # flower-esp8266
 Use ESP8266 as IoT device to demo business concept
 
+## Basic
+
 ### Preparation
 **Hardwire:**
 
@@ -10,8 +12,9 @@ Use ESP8266 as IoT device to demo business concept
 | DHT11 | 1 |
 | LCD1602 | 1 |
 | Breadboard | 1 |
-| RFID-RC522 | 1 |
+| RFID-RC522 | 2 |
 | SG90(Micro Servo 9g) | 1 |
+| RFID Card or Label (ISO-14443) | 1+ |
    
 <br/>
 
@@ -29,6 +32,8 @@ Use ESP8266 as IoT device to demo business concept
 ```
 ​http://arduino.esp8266.com/stable/package_esp8266com_index.json
 ```
+
+搜索并安装ESP8266版本2.7.4。<b>注意：</b>目前的代码，无法在3.0以上版本运行。
 
 <br/>
 
@@ -51,4 +56,19 @@ Use ESP8266 as IoT device to demo business concept
 * [ESP8266发布/订阅OneNET MQTTS](esp8266-onenet-mqtts-pubsub.md)
 * [ESP8266接受OneNET MQTTS命令](esp8266-onenet-mqtts-command.md)
 * [ESP8266 RC522读卡](esp8266-rc522-onenet-mqtts.md)
+* [ESP8266 两个RC522读卡](esp8266-2rc522-onenet-mqtts.md)
 
+<br/>
+
+## Scenarios
+
+### Retail
+* [RFID-Operated Vending Machines](retail/rovem/README.md)
+* [RFID-Operated POS]()
+
+<br/>
+
+### Home
+* [RFID-Operated Wardrobe]()
+
+<br/>

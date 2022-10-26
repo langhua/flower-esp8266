@@ -1039,4 +1039,4 @@ MFRC522::MIFARE_Key key;
 
 ### 参考资料
 
-1. ESP8266 and RFID-RC522 module example: [http://www.esp8266learning.com/esp8266-rfid-rc522-module-example.php)
+1. ESP8266 and RFID-RC522 module example: http://www.esp8266learning.com/esp8266-rfid-rc522-module-example.php

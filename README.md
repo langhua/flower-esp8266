@@ -12,8 +12,9 @@ Use ESP8266 as IoT device to demo business concept
 | DHT11 | 1 |
 | LCD1602 | 1 |
 | Breadboard | 1 |
-| RFID-RC522 | 1 |
-| SG90(Micro Servo 9g) | 1 |
+| RFID-RC522 | 2 |
+| SG90 (Micro Servo 9g) | 1 |
+| RFID Card or Label (ISO-14443) | 1+ |
    
 <br/>
 
@@ -36,6 +37,9 @@ You can find [Arduino RFID Starter Kit](https://www.aliexpress.com/wholesale?cat
 http://arduino.esp8266.com/stable/package_esp8266com_index.json
 ```
 
+搜索并安装ESP8266版本2.7.4。**注意：**目前的代码，无法在3.0以上版本运行。
+
+
 <br/>
 
 ### Contents
@@ -57,13 +61,19 @@ http://arduino.esp8266.com/stable/package_esp8266com_index.json
 * [ESP8266发布/订阅OneNET MQTTS](docs/zh/esp8266-onenet-mqtts-pubsub.md)
 * [ESP8266接受OneNET MQTTS命令](docs/zh/esp8266-onenet-mqtts-command.md)
 * [ESP8266 RC522读卡](docs/zh/esp8266-rc522-onenet-mqtts.md)
+* [ESP8266 两个RC522读卡](docs/zh/esp8266-2rc522-onenet-mqtts.md)
 
+<br/>
 
-#### Retail
-* []()
-* []()
+## Scenarios
 
+### Retail
+* [RFID-Operated Vendering Marchines](docs/zh/retail/rovem/README.md)
+* [RFID-Operated POS]()
 
-#### Home
+<br/>
 
+### Home
+* [RFID-Operated Wardrobe]()
 
+<br/>

@@ -62,19 +62,24 @@ MFRC522 mfrc522[NR_OF_READERS];   // Create MFRC522 instance.
  */
 void setup() {
 
-  Serial.begin(9600); // Initialize serial communications with the PC
-  while (!Serial);    // Do nothing if no serial port is opened (added for Arduinos based on ATMEGA32U4)
+  Serial.begin(115200); // Initialize serial communications with the PC
+  while (!Serial);
 
   SPI.begin();        // Init SPI bus
 
   for (uint8_t reader = 0; reader < NR_OF_READERS; reader++) {
     mfrc522[reader].PCD_Init(ssPins[reader], RST_PIN); // Init each MFRC522 card
+    mfrc522[reader].PCD_SetAntennaGain(MFRC522::PCD_RxGain::RxGain_48dB); // 0x07 << 4
     Serial.print(F("Reader "));
     Serial.print(reader);
     Serial.print(F(": "));
     mfrc522[reader].PCD_DumpVersionToSerial();
   }
+
+  delay(1000);
 }
+
+uint8_t counter = 0;
 
 /**
  * Main loop.
@@ -83,24 +88,39 @@ void loop() {
 
   for (uint8_t reader = 0; reader < NR_OF_READERS; reader++) {
     // Look for new cards
-
-    if (mfrc522[reader].PICC_IsNewCardPresent() && mfrc522[reader].PICC_ReadCardSerial()) {
+    uint8_t i = 1;
+    while (mfrc522[reader].PICC_IsNewCardPresent() && mfrc522[reader].PICC_ReadCardSerial()) {
       Serial.print(F("Reader "));
       Serial.print(reader);
       // Show some details of the PICC (that is: the tag/card)
-      Serial.print(F(": Card UID:"));
+      Serial.print(F(": Card["));
+      Serial.print(i);
+      Serial.print(F("] UID:"));
       dump_byte_array(mfrc522[reader].uid.uidByte, mfrc522[reader].uid.size);
       Serial.println();
-      Serial.print(F("PICC type: "));
-      MFRC522::PICC_Type piccType = mfrc522[reader].PICC_GetType(mfrc522[reader].uid.sak);
-      Serial.println(mfrc522[reader].PICC_GetTypeName(piccType));
 
       // Halt PICC
       mfrc522[reader].PICC_HaltA();
       // Stop encryption on PCD
       mfrc522[reader].PCD_StopCrypto1();
+      // delay(100);
+      i++;
     } //if (mfrc522[reader].PICC_IsNewC
   } //for(uint8_t reader
+
+  counter++;
+  if (counter >= 10) {
+    Serial.println();
+    // reinitialize reader1
+    mfrc522[1].PCD_Init(ssPins[1], RST_PIN);
+    mfrc522[1].PCD_SetAntennaGain(MFRC522::PCD_RxGain::RxGain_48dB);
+    Serial.print(F("Reader 1: "));
+    mfrc522[1].PCD_DumpVersionToSerial();
+    counter = 0;
+  } else {
+    Serial.print(".");
+  }
+  delay(1000);
 }
 
 /**
