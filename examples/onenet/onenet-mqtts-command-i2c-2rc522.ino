@@ -91,9 +91,9 @@ Servo servo;
 #define HASH_SIZE 32
 
 #ifndef STASSID
-#define STASSID "Davinci-sjh"
+#define STASSID "ssid"
 // #define STAPSK  "12c2b70ac008"
-#define STAPSK  "12345678"
+#define STAPSK  "password"
 #endif
 
 const char *ssid = STASSID;
