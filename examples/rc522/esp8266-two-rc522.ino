@@ -105,7 +105,7 @@ void loop() {
       mfrc522[reader].PCD_StopCrypto1();
       // delay(100);
       i++;
-    } //if (mfrc522[reader].PICC_IsNewC
+    } //while (mfrc522[reader].PICC_IsNewC
   } //for(uint8_t reader
 
   counter++;

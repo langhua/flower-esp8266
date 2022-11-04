@@ -1,184 +1,3 @@
-# ESP8266 RC522读卡
-
-本节在[ESP8266接受OneNET MQTTS命令](esp8266-onenet-mqtts-command.md)的基础上，增加了ESP8266使用RC522读取任意RFID卡，向SG90发送一条转动到0度或90度命令。
-
-### Fritzing元件图
-* [RC522-Fritzing元件图](https://github.com/miguelbalboa/rfid/blob/master/doc/fritzing/)，导入其中的RFID-RC522-v3.fzpz文件
-
-接线图如下图所示：
-
-![NodeMCU-DHT11-LCD1602_I2C-SG90-RC522](images/rc522/ESP8266-DHT11-LCD1602_I2C-SG90-RC522.png)
-
-<br/>
-
-### 基于MFRC522 by GithubCommunity的实现
-
-在Arduino IDE的【库管理】中，安装MFRC522，如下图所示：
-![Arduino_rc522_searchresults](images/rc522/arduino-mfrc522-lib.png)
-
-<br/>
-
-### MFRC522样例代码
-
-在Arduino中，修改和运行MFRC522库带的ReadNUID样例程序。调出ReadNUID示例代码的方法是，点击菜单【文件】->【示例】->【MFRC522】->【ReadNUID】，如下图所示：
-
-![Arduino-MFRC522-ReadNUID](images/rc522/arduino-mfrc522-ReadNUID.png)
-
-ReadNUID样例程序，要修改为如下所示代码，才能符合前面的线路图接线，正确执行：
-
-```c++
-/**
- * --------------------------------------------------------------------------------------------------------------------
- * Example sketch/program showing how to read new NUID from a PICC to serial.
- * --------------------------------------------------------------------------------------------------------------------
- * This is a MFRC522 library example; for further details and other examples see: https://github.com/miguelbalboa/rfid
- * 
- * Example sketch/program showing how to the read data from a PICC (that is: a RFID Tag or Card) using a MFRC522 based RFID
- * Reader on the Arduino SPI interface.
- * 
- * When the Arduino and the MFRC522 module are connected (see the pin layout below), load this sketch into Arduino IDE
- * then verify/compile and upload it. To see the output: use Tools, Serial Monitor of the IDE (hit Ctrl+Shft+M). When
- * you present a PICC (that is: a RFID Tag or Card) at reading distance of the MFRC522 Reader/PCD, the serial output
- * will show the type, and the NUID if a new card has been detected. Note: you may see "Timeout in communication" messages
- * when removing the PICC from reading distance too early.
- * 
- * @license Released into the public domain.
- * 
- * Typical pin layout used:
- * -----------------------------------------------------------------------------------------
- *             MFRC522      Arduino       Arduino   Arduino    Arduino          Arduino
- *             Reader/PCD   Uno/101       Mega      Nano v3    Leonardo/Micro   Pro Micro
- * Signal      Pin          Pin           Pin       Pin        Pin              Pin
- * -----------------------------------------------------------------------------------------
- * RST/Reset   RST          9             5         D9         RESET/ICSP-5     RST
- * SPI SS      SDA(SS)      10            53        D10        10               10
- * SPI MOSI    MOSI         11 / ICSP-4   51        D11        ICSP-4           16
- * SPI MISO    MISO         12 / ICSP-1   50        D12        ICSP-1           14
- * SPI SCK     SCK          13 / ICSP-3   52        D13        ICSP-3           15
- */
-
-#include <SPI.h>
-#include <MFRC522.h>
-
-// for ESP8266
-#define D0 16
-#define D1 5
-#define D2 4
-#define D3 0
-#define D4 2
-#define D5 14
-#define D6 12
-#define D7 13
-#define D8 15
-#define RX 3 // D9
-#define TX 1 // D10
-
-// for ESP8266, SDA(SS) -> D8, SCK -> D5, MOSI -> D7, MISO -> D6, RST -> D3
-#define SS_PIN D8
-#define RST_PIN D3
-MFRC522 rfid(SS_PIN, RST_PIN); // Instance of the class
-MFRC522::MIFARE_Key key; 
-
-// Init array that will store new NUID 
-byte nuidPICC[4];
-
-void setup() { 
-  Serial.begin(9600);
-  SPI.begin(); // Init SPI bus
-  rfid.PCD_Init(); // Init MFRC522 
-
-  for (byte i = 0; i < 6; i++) {
-    key.keyByte[i] = 0xFF;
-  }
-
-  Serial.println(F("This code scan the MIFARE Classsic NUID."));
-  Serial.print(F("Using the following key:"));
-  printHex(key.keyByte, MFRC522::MF_KEY_SIZE);
-}
- 
-void loop() {
-
-  // Reset the loop if no new card present on the sensor/reader. This saves the entire process when idle.
-  if ( ! rfid.PICC_IsNewCardPresent())
-    return;
-
-  // Verify if the NUID has been readed
-  if ( ! rfid.PICC_ReadCardSerial())
-    return;
-
-  Serial.print(F("PICC type: "));
-  MFRC522::PICC_Type piccType = rfid.PICC_GetType(rfid.uid.sak);
-  Serial.println(rfid.PICC_GetTypeName(piccType));
-
-  // Check is the PICC of Classic MIFARE type
-  if (piccType != MFRC522::PICC_TYPE_MIFARE_MINI &&  
-    piccType != MFRC522::PICC_TYPE_MIFARE_1K &&
-    piccType != MFRC522::PICC_TYPE_MIFARE_4K) {
-    Serial.println(F("Your tag is not of type MIFARE Classic."));
-    return;
-  }
-
-  if (rfid.uid.uidByte[0] != nuidPICC[0] || 
-    rfid.uid.uidByte[1] != nuidPICC[1] || 
-    rfid.uid.uidByte[2] != nuidPICC[2] || 
-    rfid.uid.uidByte[3] != nuidPICC[3] ) {
-    Serial.println(F("A new card has been detected."));
-
-    // Store NUID into nuidPICC array
-    for (byte i = 0; i < 4; i++) {
-      nuidPICC[i] = rfid.uid.uidByte[i];
-    }
-   
-    Serial.println(F("The NUID tag is:"));
-    Serial.print(F("In hex: "));
-    printHex(rfid.uid.uidByte, rfid.uid.size);
-    Serial.println();
-    Serial.print(F("In dec: "));
-    printDec(rfid.uid.uidByte, rfid.uid.size);
-    Serial.println();
-  }
-  else Serial.println(F("Card read previously."));
-
-  // Halt PICC
-  rfid.PICC_HaltA();
-
-  // Stop encryption on PCD
-  rfid.PCD_StopCrypto1();
-}
-
-
-/**
- * Helper routine to dump a byte array as hex values to Serial. 
- */
-void printHex(byte *buffer, byte bufferSize) {
-  for (byte i = 0; i < bufferSize; i++) {
-    Serial.print(buffer[i] < 0x10 ? " 0" : " ");
-    Serial.print(buffer[i], HEX);
-  }
-}
-
-/**
- * Helper routine to dump a byte array as dec values to Serial.
- */
-void printDec(byte *buffer, byte bufferSize) {
-  for (byte i = 0; i < bufferSize; i++) {
-    Serial.print(buffer[i] < 0x10 ? " 0" : " ");
-    Serial.print(buffer[i], DEC);
-  }
-}
-```
-
-第34-49行，是针对ESP8266做的修改，替代了原来ReadNUID的第34和35行。
-
-打开串口监视器，设为9600波特率，执行上述代码，同时使用两张RFID卡片，如果能显示出两张卡Uid，即RF522和接线均正确可用。
-
-<br/>
-
-### 代码说明
-
-下面的代码是在[ESP8266接受OneNET MQTTS命令](esp8266-onenet-mqtts-command.md)基础上，结合本文上面的RC522读卡代码修改而成：
-
-```c++
 #include <ESP8266WiFi.h>
 #include <WiFiClientSecure.h>
 #include <time.h>
@@ -214,14 +33,19 @@ void printDec(byte *buffer, byte bufferSize) {
 #define RX 3 // D9
 #define TX 1 // D10
 
-// for ESP8266, SDA(SS) -> D8, SCK -> D5, MOSI -> D7, MISO -> D6, RST -> D3
-#define SS_PIN D8
+// for ESP8266, SDA_1(SS_1) -> D8, SCK -> D5, MOSI -> D7, MISO -> D6, RST -> D3
+//              SDA_2(SS_2) -> D4
+#define SS_1_PIN D8
+#define SS_2_PIN D4
 #define RST_PIN D3
-MFRC522 rfid(SS_PIN, RST_PIN); // Instance of the class
-MFRC522::MIFARE_Key key;
 
-// Init array that will store new NUID
-byte nuidPICC[4];
+#define NR_OF_READERS   2
+byte ssPins[] = {SS_1_PIN, SS_2_PIN};
+MFRC522 mfrc522[NR_OF_READERS];   // Create MFRC522 instance.
+
+#define MAX_UIDS 10
+MFRC522::Uid uids[MAX_UIDS];
+byte totalUids = 0;
 
 #define DHTPIN RX
 #define DHTTYPE DHT11
@@ -235,8 +59,7 @@ byte findI2CAddress() {
   byte i2cAddr = 0;
 
   Wire.begin();
-  for (byte i = 8; i < 120; i++)
-  {
+  for (byte i = 8; i < 120; i++) {
     Wire.beginTransmission (i);
     if (Wire.endTransmission () == 0)
       {
@@ -268,8 +91,9 @@ Servo servo;
 #define HASH_SIZE 32
 
 #ifndef STASSID
-#define STASSID "your-ssid"
-#define STAPSK  "your-pass"
+#define STASSID "Davinci-sjh"
+// #define STAPSK  "12c2b70ac008"
+#define STAPSK  "12345678"
 #endif
 
 const char *ssid = STASSID;
@@ -330,10 +154,11 @@ void callback(char* topic, byte* payload, unsigned int length) {
   Serial.print("]: ");
   char receivedChar[length + 1];
   for (int i=0; i < length; i++) {
-    receivedChar[i] = (char)payload[i];
-    Serial.print(receivedChar[i]);
+    receivedChar[i] = (char) payload[i];
   }
   receivedChar[length] = '\0';
+  Serial.print(receivedChar);
+
   std::string topicString = topic;
   std::string::size_type idx = topicString.find("/cmd/request/");
   if (idx != std::string::npos) {
@@ -345,18 +170,40 @@ void callback(char* topic, byte* payload, unsigned int length) {
     char cmdResTopic[1024];
     getOnenetCmdResTopic(cmdResTopic, cmdId);
     char cmdResPayload[1024];
-    generateOnenetCmdResPayload(cmdResPayload, receivedChar);
+
+    // 缺省93度
+    if (strcmp(receivedChar, "开门") == 0) {
+      servo.write(0);
+    } else if (strcmp(receivedChar, "关门") == 0) {
+      servo.write(93);
+    }
+
+    for (int i=0; i < 1024; i++) {
+      cmdResPayload[i] = '\0';
+    }
+    if (strcmp(receivedChar, "盘点") == 0) {
+      mfrc522[0].PCD_AntennaOff();
+      getInventory(cmdResPayload);
+      mfrc522[0].PCD_AntennaOn();
+    } else {
+      generateOnenetCmdResPayload(cmdResPayload, receivedChar);
+    }
+
     Serial.print("Publish [");
     Serial.print(cmdResTopic);
     Serial.print("]: ");
     Serial.println(cmdResPayload);
     mqttclient.publish(cmdResTopic, cmdResPayload);
 
-    // 缺省93度
-    if (strcmp(receivedChar, "开门") == 0) {
-      servo.write(0);
-    } else if (strcmp(receivedChar, "关门") == 0) {
-      servo.write(90);
+    // clear char arrays
+    for (int i=0; i < length; i++) {
+      receivedChar[i] = '\0';
+    }
+    for (int i=0; i < 1024; i++) {
+      cmdResTopic[i] = '\0';
+    }
+    for (int i=0; i < 1024; i++) {
+      cmdResPayload[i] = '\0';
     }
   } else {
     Serial.println();
@@ -504,18 +351,20 @@ void setup() {
   getOnenetSubtopic(sub_accepted_topic, sub_rejected_topic);
   getOnenetCmdtopic(sub_cmd_topic);
 
-  // RC522
+  // Two RC522, one for door, another for reading RFIDs in container
   SPI.begin(); // Init SPI bus
-  rfid.PCD_Init(); // Init MFRC522
-  rfid.PCD_SetAntennaGain(0x07 << 4); // Set to 48db
-  for (byte i = 0; i < 6; i++) {
-    key.keyByte[i] = 0xFF;
+  for (uint8_t reader = 0; reader < NR_OF_READERS; reader++) {
+    mfrc522[reader].PCD_Init(ssPins[reader], RST_PIN); // Init each MFRC522 card
+    mfrc522[reader].PCD_SetAntennaGain(MFRC522::PCD_RxGain::RxGain_48dB); // 0x07 << 4
+    Serial.print(F("Reader "));
+    Serial.print(reader);
+    Serial.print(F(": "));
+    mfrc522[reader].PCD_DumpVersionToSerial();
   }
-  Serial.println(F("This code scan the MIFARE Classsic NUID."));
-  Serial.print(F("Using the following key:"));
-  printHex(key.keyByte, MFRC522::MF_KEY_SIZE);
   Serial.println();
 }
+
+time_t last_time = time(nullptr);
 
 void loop() {
   time_t now = time(nullptr);
@@ -525,7 +374,7 @@ void loop() {
   if (isnan(t) || isnan(h)) {
     Serial.println("Failed to read from DHT");
     lcd.setCursor(0, 0);
-    lcd.print("Failed");
+    lcd.print("Failed to read TEMP/RH");
   } else {
     lcd.setCursor(0, 0);
     lcd.print("Temp=");
@@ -578,65 +427,31 @@ void loop() {
       publishTempHumi(now, t, h);
     }
   }
+
   Serial.println();
-  delay(2000);
   if (topic_counter > 5) {
     topic_counter = 0;
   } else {
     topic_counter++;
   }
 
-  // Reset the loop if no new card present on the sensor/reader. This saves the entire process when idle.
-  if ( ! rfid.PICC_IsNewCardPresent())
-    return;
-
-  // Verify if the NUID has been readed
-  if ( ! rfid.PICC_ReadCardSerial())
-    return;
-
-  Serial.print(F("PICC type: "));
-  MFRC522::PICC_Type piccType = rfid.PICC_GetType(rfid.uid.sak);
-  Serial.println(rfid.PICC_GetTypeName(piccType));
-
-  // Check is the PICC of Classic MIFARE type
-  if (piccType != MFRC522::PICC_TYPE_MIFARE_MINI &&
-    piccType != MFRC522::PICC_TYPE_MIFARE_1K &&
-    piccType != MFRC522::PICC_TYPE_MIFARE_4K) {
-    Serial.println(F("Your tag is not of type MIFARE Classic."));
-    return;
-  }
-
-  if (rfid.uid.uidByte[0] != nuidPICC[0] ||
-    rfid.uid.uidByte[1] != nuidPICC[1] ||
-    rfid.uid.uidByte[2] != nuidPICC[2] ||
-    rfid.uid.uidByte[3] != nuidPICC[3] ) {
-    Serial.println(F("A new card has been detected."));
-
-    // Store NUID into nuidPICC array
-    for (byte i = 0; i < 4; i++) {
-      nuidPICC[i] = rfid.uid.uidByte[i];
-    }
-
-    Serial.println(F("The NUID tag is:"));
-    Serial.print(F("In hex: "));
-    printHex(rfid.uid.uidByte, rfid.uid.size);
+  // if Reader0 reads a card, toggle the servo
+  if (mfrc522[0].PICC_IsNewCardPresent() && mfrc522[0].PICC_ReadCardSerial()) {
+    Serial.print(F("Reader0: Card UID:"));
+    dump_byte_array(mfrc522[0].uid.uidByte, mfrc522[0].uid.size);
     Serial.println();
-    Serial.print(F("In dec: "));
-    printDec(rfid.uid.uidByte, rfid.uid.size);
-    Serial.println();
-  }
-  else Serial.println(F("Card read previously."));
 
-  // Halt PICC
-  rfid.PICC_HaltA();
+    // Halt PICC
+    mfrc522[0].PICC_HaltA();
+    // Stop encryption on PCD
+    mfrc522[0].PCD_StopCrypto1();
 
-  // Stop encryption on PCD
-  rfid.PCD_StopCrypto1();
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print(bytes2HexString(mfrc522[0].uid.uidByte, mfrc522[0].uid.size));
+    toggleServo();
+  } //if
 
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print(bytes2HexString(rfid.uid.uidByte, rfid.uid.size));
-  toggleServo();
   delay(3000);
 }
 
@@ -935,108 +750,102 @@ String bytes2HexString(byte *buffer, byte length) {
   hexString.toUpperCase();
   return hexString;
 }
-```
 
-<br/>
-
-代码第20-21行，引入SPI库和MFRC522库：
-
-```c++
-#include <SPI.h>
-#include <MFRC522.h>
-```
-
-第36-40行，定义了一个全局MFRC522对象：
-
-```c++
-// for ESP8266, SDA(SS) -> D8, SCK -> D5, MOSI -> D7, MISO -> D6, RST -> D3
-#define SS_PIN D8
-#define RST_PIN D3
-MFRC522 rfid(SS_PIN, RST_PIN); // Instance of the class
-MFRC522::MIFARE_Key key;
-```
-
-<br/>
-
-代码第326-336行，初始化和启用MFRC522，并把天线功率设置为最大的48分贝：
-
-```c++
-  // RC522
-  SPI.begin(); // Init SPI bus
-  rfid.PCD_Init(); // Init MFRC522
-  rfid.PCD_SetAntennaGain(0x07 << 4); // Set to 48db
-  for (byte i = 0; i < 6; i++) {
-    key.keyByte[i] = 0xFF;
+/**
+ * Helper routine to dump a byte array as hex values to Serial.
+ */
+void dump_byte_array(byte *buffer, byte bufferSize) {
+  for (byte i = 0; i < bufferSize; i++) {
+    Serial.print(buffer[i] < 0x10 ? " 0" : " ");
+    Serial.print(buffer[i], HEX);
   }
-  Serial.println(F("This code scan the MIFARE Classsic NUID."));
-  Serial.print(F("Using the following key:"));
-  printHex(key.keyByte, MFRC522::MF_KEY_SIZE);
-  Serial.println();
-```
+}
 
-<br/>
+/**
+ * Get Uids from mfrc as inventory data
+ * mfrc522[1], ssPins[1], RST_PIN
+ */
+void getInventory(char cmdResPayload[]) {
+  // reinit mfrc522[1]
+  mfrc522[1].PCD_Init(ssPins[1], RST_PIN);
+  mfrc522[1].PCD_SetAntennaGain(MFRC522::PCD_RxGain::RxGain_48dB);
+  Serial.print(F("Inventory Reader: "));
+  mfrc522[1].PCD_DumpVersionToSerial();
 
-第408-459行，在读卡器检测到RFID卡或标签时，电机转动到93度（关门）或0度（开门）：
+  // run 3 times to make sure all rfids can be read
+  for (uint8_t i = 0; i < 3; i++) {
+    uint8_t n = 0;
+    while (mfrc522[1].PICC_IsNewCardPresent() && mfrc522[1].PICC_ReadCardSerial()) {
 
-```c++
-  // Reset the loop if no new card present on the sensor/reader. This saves the entire process when idle.
-  if ( ! rfid.PICC_IsNewCardPresent())
-    return;
+      Serial.print(F("Card["));
+      Serial.print(n);
+      Serial.print(F("] UID:"));
+      Serial.println(bytes2HexString(mfrc522[1].uid.uidByte, mfrc522[1].uid.size));
 
-  // Verify if the NUID has been readed
-  if ( ! rfid.PICC_ReadCardSerial())
-    return;
+      bool found = false;
+      if (totalUids > 0) {
+        for (uint8_t j = 0; j < totalUids; j++) {
+          if (uids[j].size == mfrc522[1].uid.size) {
+            bool isEqual = true;
+            for (uint8_t m = 0; m < uids[j].size; m++) {
+              if (uids[j].uidByte[m] != mfrc522[1].uid.uidByte[m]) {
+                isEqual = false;
+                break;
+              }
+            }
+            if (isEqual) {
+              found = true;
+              break;
+            }
+          }
+        }
+      }
+      if (!found && totalUids < 10) {
+        uids[totalUids] = mfrc522[1].uid;
+        totalUids ++;
+      }
 
-  Serial.print(F("PICC type: "));
-  MFRC522::PICC_Type piccType = rfid.PICC_GetType(rfid.uid.sak);
-  Serial.println(rfid.PICC_GetTypeName(piccType));
+      // Halt PICC
+      mfrc522[1].PICC_HaltA();
+      // Stop encryption on PCD
+      mfrc522[1].PCD_StopCrypto1();
 
-  // Check is the PICC of Classic MIFARE type
-  if (piccType != MFRC522::PICC_TYPE_MIFARE_MINI &&
-    piccType != MFRC522::PICC_TYPE_MIFARE_1K &&
-    piccType != MFRC522::PICC_TYPE_MIFARE_4K) {
-    Serial.println(F("Your tag is not of type MIFARE Classic."));
-    return;
-  }
+      n++;
+    } //while (mfrc522[1]
 
-  if (rfid.uid.uidByte[0] != nuidPICC[0] ||
-    rfid.uid.uidByte[1] != nuidPICC[1] ||
-    rfid.uid.uidByte[2] != nuidPICC[2] ||
-    rfid.uid.uidByte[3] != nuidPICC[3] ) {
-    Serial.println(F("A new card has been detected."));
-
-    // Store NUID into nuidPICC array
-    for (byte i = 0; i < 4; i++) {
-      nuidPICC[i] = rfid.uid.uidByte[i];
+    Serial.print("Total Uids: ");
+    Serial.println(totalUids);
+    if (totalUids > 0) {
+      Serial.println("-------Start of Uids--------");
+    }
+    for (uint8_t m = 0; m < totalUids; m++) {
+      Serial.print("Card[");
+      Serial.print(m);
+      Serial.print("]: ");
+      Serial.println(bytes2HexString(uids[m].uidByte, uids[m].size));
+    }//for (uint8_t m
+    if (totalUids > 0) {
+      Serial.println("------End of Uids---------");
+      Serial.println();
     }
 
-    Serial.println(F("The NUID tag is:"));
-    Serial.print(F("In hex: "));
-    printHex(rfid.uid.uidByte, rfid.uid.size);
-    Serial.println();
-    Serial.print(F("In dec: "));
-    printDec(rfid.uid.uidByte, rfid.uid.size);
-    Serial.println();
+    // delay(100);
+  } //for (uint8_t i
+
+  strcat(cmdResPayload, String("{total:").c_str());
+  strcat(cmdResPayload, String(totalUids).c_str());
+  strcat(cmdResPayload, String(",udis:[").c_str());
+  for (uint8_t m = 0; m < totalUids; m++) {
+    if (m > 0) {
+      strcat(cmdResPayload, String(',').c_str());
+    }
+    strcat(cmdResPayload, bytes2HexString(uids[m].uidByte, uids[m].size).c_str());
   }
-  else Serial.println(F("Card read previously."));
+  strcat(cmdResPayload, String("]}").c_str());
 
-  // Halt PICC
-  rfid.PICC_HaltA();
-
-  // Stop encryption on PCD
-  rfid.PCD_StopCrypto1();
-
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print(bytes2HexString(rfid.uid.uidByte, rfid.uid.size));
-  toggleServo();
-  delay(3000);
-```
-
-<br/>
-
-
-
-### 参考资料
-
-1. ESP8266 and RFID-RC522 module example: http://www.esp8266learning.com/esp8266-rfid-rc522-module-example.php
+  // clear data
+  for (uint8_t j = 0; j < totalUids; j++) {
+    uids[j].size = 0;
+  }
+  totalUids = 0;
+}

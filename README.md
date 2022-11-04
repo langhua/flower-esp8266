@@ -39,6 +39,11 @@ http://arduino.esp8266.com/stable/package_esp8266com_index.json
 
 搜索并安装ESP8266版本2.7.4。**注意：**目前的代码，无法在3.0以上版本运行。
 
+<br/>
+
+**Services**
+
+* OneNET MQTT
 
 <br/>
 
