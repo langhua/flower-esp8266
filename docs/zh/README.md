@@ -71,13 +71,11 @@ The following scenarios can be used for proof of concept or entry level training
 
 ### Retail
 * [RFID-Operated Vendering Marchines](retail/rovem/README.md)
-
   [![RFID-Operated Vendering Marchines](retail/rovem/images/esp8266_rovem_cabinet_pad_small.jpg)](retail/rovem/README.md)
 
 <br/>
 
 * [RFID-Operated POS](retail/pos/README.md)
-
   [![RFID-Operated POS](retail/rovem/images/esp8266_rovem_facility_pad_small.jpg)](retail/pos/README.md)
 
 <br/>
