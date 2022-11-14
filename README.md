@@ -1,7 +1,7 @@
 [English](README.md)|[中文](docs/zh/README.md)
 
 # flower-esp8266
-Use ESP8266 as IoT device to demo business concept
+Use ESP8266 as IoT device to demo business concept.
 
 ### Preparations
 **Hardwire:**
@@ -29,7 +29,7 @@ You can find [Arduino RFID Starter Kit](https://www.aliexpress.com/wholesale?cat
 
 <br/>
 
-**Arduino首选项**
+**Arduino Preference**
 
 在Arduino中，选择菜单【文件】->【首选项】->【附加开发板管理器网址】中，输入：
 
@@ -71,7 +71,7 @@ http://arduino.esp8266.com/stable/package_esp8266com_index.json
 <br/>
 
 ## Scenarios
-The following scenarios can be used for proof of concept or entry level training.
+The following scenarios can be used for proof of concept or entry level training on 'Each object has its own unique identity'.
 
 ### Retail
 * [RFID-Operated Vendering Marchines](docs/zh/retail/rovem/README.md)

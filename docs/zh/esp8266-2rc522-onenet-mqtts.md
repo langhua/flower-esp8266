@@ -1028,9 +1028,10 @@ void getInventory(char cmdResPayload[]) {
 <br/>
 
 在OneNET中发送【盘点】命令，能够返回Reader1读取到的Uid（最多10个），如下图所示：
+
 ![onenet-mqtts-command-inventory](images/onenet/onenet-mqtts-command-inventory.png)
 
 cmd_resp的数据示例：
-```json lines
+```
 {total:5,udis:[53-D2-7E-E3-20-00-01,53-E2-7E-E3-20-00-01,53-DA-7E-E3-20-00-01,53-EA-7E-E3-20-00-01,53-CA-7E-E3-20-00-01]}
 ```

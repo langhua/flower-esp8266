@@ -1,27 +1,27 @@
 # flower-esp8266
-Use ESP8266 as IoT device to demo business concept
+ESP8266作为物联网设备，来演示商业概念。
 
-## Basic
+## 基本
 
-### Preparation
-**Hardwire:**
+### 准备
+**硬件：**
 
-| Name | Pieces |
+| 名称 | 数量 |
 | :--- | ---: | 
-| ESP8266 Development Board | 1 |
+| ESP8266开发板 | 1 |
 | DHT11 | 1 |
-| LCD1602 | 1 |
-| Breadboard | 1 |
+| LCD1602(带I2C) | 1 |
+| 面包板 | 2 |
 | RFID-RC522 | 2 |
 | SG90(Micro Servo 9g) | 1 |
-| RFID Card or Label (ISO-14443) | 1+ |
-   
+| RFID卡片或标签 (符合ISO-14443标准) | 1+ |
+
 <br/>
 
-**Software**
-* Download and install [Arduino IDE](https://www.arduino.cc/en/Main/Software)
+**软件**
+* 下载并安装[Arduino开发工具](https://www.arduino.cc/en/Main/Software)
 
-* Optional: download and install [Fritzing](https://fritzing.org/download/)
+* 可选：下载并安装[Fritzing](https://fritzing.org/download/)
 
 <br/>
 
@@ -37,7 +37,7 @@ Use ESP8266 as IoT device to demo business concept
 
 <br/>
 
-**Services**
+**网络服务**
 
 * OneNET MQTT
 
@@ -66,21 +66,23 @@ Use ESP8266 as IoT device to demo business concept
 
 <br/>
 
-## Scenarios
-The following scenarios can be used for proof of concept or entry level training.
+## 场景
+下面的场景，是一物一码概念验证或入门培训使用。
 
-### Retail
-* [RFID-Operated Vendering Marchines](retail/rovem/README.md)
-  [![RFID-Operated Vendering Marchines](retail/rovem/images/esp8266_rovem_cabinet_pad_small.jpg)](retail/rovem/README.md)
+### 零售
+* [基于RFID的售货机](retail/rovem/README.md)
 
-<br/>
-
-* [RFID-Operated POS](retail/pos/README.md)
-  [![RFID-Operated POS](retail/rovem/images/esp8266_rovem_facility_pad_small.jpg)](retail/pos/README.md)
+  [![基于RFID的售货机](retail/rovem/images/esp8266_rovem_cabinet_pad_small.jpg)](retail/rovem/README.md)
 
 <br/>
 
-### Home
-* [RFID-Operated Wardrobe]()
+* [基于RFID的收银机](retail/pos/README.md)
+
+  [![基于RFID的收银机](retail/rovem/images/esp8266_rovem_facility_pad_small.jpg)](retail/pos/README.md)
+
+<br/>
+
+### 家居
+* [基于RFID的衣柜]()
 
 <br/>
